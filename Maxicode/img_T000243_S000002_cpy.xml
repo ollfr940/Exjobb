@@ -1,0 +1,82 @@
+<?xml version="1.0"?>
+<camera name="CAM1" company="SICK AG, Identification &amp; Measuring" device="ConsoleSimu">
+<SW_Version>1.50</SW_Version>
+<ScaleBmp>1</ScaleBmp>
+<ScaleVelo>1</ScaleVelo>
+<BinShift>0</BinShift>
+<OrigImgSize width="0" height="0" />
+<image objectid="0">
+<UTC>0</UTC>
+<imageinfo type="BMP">
+<scale>1</scale>
+<resolution>100</resolution>
+<size width="0" length="0" />
+<origin x="0" y="0" />
+</imageinfo>
+<AvgStdDev>5.05</AvgStdDev><MaxStdDev>66.75</MaxStdDev><PDF417Params >1 0 </PDF417Params >
+<Params1D>51 2 0 255 0 0 </Params1D>
+<CodeConf_1>1 0 3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </CodeConf_1>
+<Params2D>25 3 0 255 0 0 </Params2D>
+<MaxicodeParams>1 1 1 1 1 1 1 0 </MaxicodeParams>
+<box name="FinalRegion" pos="2096 437 2033 383 1902 537 1965 591" color="0 0 255" />
+<box name="FinalRegion" pos="2079 457 2015 403 1902 537 1965 591" color="0 0 255" />
+<box name="FinalRegion" pos="2085 759 2015 701 1961 766 2031 825" color="0 0 255" />
+<box name="FinalRegion" pos="2102 739 2031 682 1955 773 2026 832" color="0 0 255" />
+<box name="FinalRegion" pos="2013 382 1975 349 1918 416 1957 449" color="0 0 255" />
+<box name="FinalRegion" pos="2095 431 2035 370 1914 517 1978 572" color="0 0 255" />
+<box name="FinalRegion" pos="2063 323 2024 290 1849 496 1888 529" color="0 0 255" />
+<box name="FinalRegion" pos="2089 779 1997 711 1956 768 2048 836" color="0 0 255" />
+<text name="SegmTime_PreProc" string="TIME PreProc:  13" fontsize="10" pos="1898 0" color="0 255 0" />
+<text name="SegmTime_Features" string="TIME Features: 18" fontsize="10" pos="1898 10" color="0 255 0" />
+<text name="SegmTime_ObjCreate" string="TIME ObjCreate:13" fontsize="10" pos="1898 20" color="0 255 0" />
+<box name="RoiAOBB" pos="1632 816 1632 336 2016 336 2016 816" color="0 0 139" />
+<line name="UnifiedDecoCtrl::2DRoi2Process" pos="1824 432 2016 432" color="0 0 139" />
+<line name="UnifiedDecoCtrl::2DRoi2Process" pos="1824 528 2016 528" color="0 0 139" />
+<line name="UnifiedDecoCtrl::2DRoi2Process" pos="1632 624 2016 624" color="0 0 139" />
+<line name="UnifiedDecoCtrl::2DRoi2Process" pos="1728 720 2016 720" color="0 0 139" />
+<box name="maxi.symbol_roi" pos="1715 617 1821 513 1937 614 1832 720" color="255 128 0" />
+<line name="maxi.symbol_roi" pos="1826 594 1826 638" color="255 128 0" />
+<line name="maxi.symbol_roi" pos="1803 616 1849 616" color="255 128 0" />
+<symbol type="MaxiCode" pos="1821 507 1709 617 1832 726 1943 614">
+<result length="75">[)&gt;&lt;1e&gt;01&lt;1d&gt;96307012082&lt;1d&gt;840&lt;1d&gt;003&lt;1d&gt;1Z45106976&lt;1d&gt;UPSN&lt;1d&gt;X30718&lt;1d&gt;003&lt;1d&gt;&lt;1d&gt;1/1&lt;1d&gt;8&lt;1d&gt;Y&lt;1d&gt;12938&lt;1c&gt;&lt;1d&gt;&lt;1d&gt;GA&lt;1e&gt;&lt;04&gt;</result>
+<symbolinfo>
+<ratio>0.00</ratio>
+<dimension dx="30" dy="33" />
+</symbolinfo>
+<verifier>
+<uec value="67" grade ="" />
+<sc value="100" grade ="" />
+<pg value="0.42" grade ="" />
+<anu value="0.00" grade ="" />
+<iso15415_fpd value="-8589934.60" grade ="" />
+<iso15415_mod value="-8589934.60" grade ="" />
+<iso15415_gnu value="-8589934.60" grade ="" />
+<osg grade="" desc="Poor" color="255 140 0" />
+<csg grade="" desc="Poor" color="255 0 0" />
+</verifier>
+<eccinfo>
+<ecl>ECC200</ecl>
+<errors>0</errors>
+<errorsmax>0</errorsmax>
+</eccinfo>
+<moduleinfo>
+<width unit="pix">4.67</width>
+<height unit="pix">4.44</height>
+<ratio>0.95</ratio>
+</moduleinfo>
+</symbol>
+<box name="MaxiCode" pos="1709 617 1821 507 1943 614 1832 726" color="0 255 0" />
+<text name="TimeSegmenation" string="**** OVERALL TIMINGS ****" fontsize="10" pos="1898 50" color="0 255 0" />
+<text name="TimeSegmenation" string="TIME Seg:  45" fontsize="10" pos="1898 60" color="0 255 0" />
+<text name="TimeDeco" string="TIME Deco2D: 79" fontsize="10" pos="1898 70" color="0 255 0" />
+<text name="TimeDeco" string="TIME Deco1d:15" fontsize="10" pos="1898 80" color="0 255 0" />
+<text name="TimeDeco" string="TIME DecoPdf417:0" fontsize="10" pos="1898 90" color="0 255 0" />
+<text name="TimeTotalDeco" string="TIME TOTAL:139" fontsize="10" pos="1898 100" color="0 255 0" />
+<AcqFrames>0</AcqFrames>
+<DecoFrames>0</DecoFrames>
+<LostFrames>0</LostFrames>
+<FramesInQueue>0</FramesInQueue>
+<QueueSize>0</QueueSize>
+<ThisFrameNr>0</ThisFrameNr>
+</image>
+</camera>

@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<camera name="CAM1" company="SICK AG, Identification &amp; Measuring" device="ConsoleSimu">
+<SW_Version>1.50</SW_Version>
+<ScaleBmp>1</ScaleBmp>
+<ScaleVelo>1</ScaleVelo>
+<BinShift>0</BinShift>
+<OrigImgSize width="0" height="0" />
+<image objectid="0">
+<UTC>0</UTC>
+<imageinfo type="BMP">
+<scale>1</scale>
+<resolution>100</resolution>
+<size width="0" length="0" />
+<origin x="0" y="0" />
+</imageinfo>
+<AvgStdDev>7.30</AvgStdDev><MaxStdDev>80.27</MaxStdDev><PDF417Params >1 0 </PDF417Params >
+<Params1D>51 2 0 255 0 0 </Params1D>
+<CodeConf_1>1 0 3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </CodeConf_1>
+<Params2D>25 3 0 255 0 0 </Params2D>
+<MaxicodeParams>1 1 1 1 1 1 1 0 </MaxicodeParams>
+<box name="FinalRegion" pos="1784 458 1774 662 2044 676 2048 470" color="0 0 255" />
+<box name="FinalRegion" pos="2058 680 2067 466 1770 454 1761 668" color="0 0 255" />
+<box name="FinalRegion" pos="2043 1091 2047 929 1896 924 1892 1086" color="0 0 255" />
+<box name="FinalRegion" pos="2057 1091 2062 929 1884 924 1880 1086" color="0 0 255" />
+<box name="FinalRegion" pos="2044 1312 2046 1228 1857 1222 1855 1305" color="0 0 255" />
+<box name="FinalRegion" pos="2055 1315 2057 1223 1849 1219 1847 1311" color="0 0 255" />
+<box name="FinalRegion" pos="2042 1090 2047 926 1870 921 1866 1086" color="0 0 255" />
+<text name="SegmTime_PreProc" string="TIME PreProc:  18" fontsize="10" pos="1898 0" color="0 255 0" />
+<text name="SegmTime_Features" string="TIME Features: 24" fontsize="10" pos="1898 10" color="0 255 0" />
+<text name="SegmTime_ObjCreate" string="TIME ObjCreate:40" fontsize="10" pos="1898 20" color="0 255 0" />
+<line name="RunFiltered" pos="1632 1296 1728 1296" color="255 0 0" />
+<box name="RoiAOBB" pos="1632 1488 1632 1200 2016 1200 2016 1488" color="0 0 139" />
+<line name="UnifiedDecoCtrl::2DRoi2Process" pos="1632 1392 2016 1392" color="0 0 139" />
+<text name="TimeSegmenation" string="**** OVERALL TIMINGS ****" fontsize="10" pos="1898 50" color="0 255 0" />
+<text name="TimeSegmenation" string="TIME Seg:  83" fontsize="10" pos="1898 60" color="0 255 0" />
+<text name="TimeDeco" string="TIME Deco2D: 4" fontsize="10" pos="1898 70" color="0 255 0" />
+<text name="TimeDeco" string="TIME Deco1d:20" fontsize="10" pos="1898 80" color="0 255 0" />
+<text name="TimeDeco" string="TIME DecoPdf417:0" fontsize="10" pos="1898 90" color="0 255 0" />
+<text name="TimeTotalDeco" string="TIME TOTAL:107" fontsize="10" pos="1898 100" color="0 255 0" />
+<AcqFrames>0</AcqFrames>
+<DecoFrames>0</DecoFrames>
+<LostFrames>0</LostFrames>
+<FramesInQueue>0</FramesInQueue>
+<QueueSize>0</QueueSize>
+<ThisFrameNr>0</ThisFrameNr>
+</image>
+</camera>

@@ -1,0 +1,110 @@
+<?xml version="1.0"?>
+<camera name="CAM1" company="SICK AG, Identification &amp; Measuring" device="ConsoleSimu">
+<SW_Version>1.50</SW_Version>
+<ScaleBmp>1</ScaleBmp>
+<ScaleVelo>1</ScaleVelo>
+<BinShift>0</BinShift>
+<OrigImgSize width="0" height="0" />
+<image objectid="0">
+<UTC>0</UTC>
+<imageinfo type="BMP">
+<scale>1</scale>
+<resolution>100</resolution>
+<size width="0" length="0" />
+<origin x="0" y="0" />
+</imageinfo>
+<AvgStdDev>7.30</AvgStdDev><MaxStdDev>51.37</MaxStdDev><PDF417Params >1 0 </PDF417Params >
+<Params1D>51 2 0 255 0 0 </Params1D>
+<CodeConf_1>1 0 3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </CodeConf_1>
+<Params2D>25 3 0 255 0 0 </Params2D>
+<MaxicodeParams>1 1 1 1 1 1 1 0 </MaxicodeParams>
+<box name="FinalRegion" pos="1568 991 1558 867 1287 883 1298 1007" color="0 0 255" />
+<box name="FinalRegion" pos="1243 450 1248 517 1522 502 1517 435" color="0 0 255" />
+<box name="FinalRegion" pos="1873 795 1868 739 1491 771 1497 828" color="0 0 255" />
+<box name="FinalRegion" pos="1874 794 1869 741 1439 780 1444 834" color="0 0 255" />
+<text name="SegmTime_PreProc" string="TIME PreProc:  21" fontsize="10" pos="1898 0" color="0 255 0" />
+<text name="SegmTime_Features" string="TIME Features: 25" fontsize="10" pos="1898 10" color="0 255 0" />
+<text name="SegmTime_ObjCreate" string="TIME ObjCreate:28" fontsize="10" pos="1898 20" color="0 255 0" />
+<symbol type="CODE128" pos="1550 867 1561 991 1305 1007 1294 883">
+<result length="8">04510611</result>
+<symbolinfo>
+<width unit="pix">301.54</width>
+<height unit="pix">124.40</height>
+<angle unit="deg">0.00</angle>
+<ratio>0.41</ratio>
+</symbolinfo>
+<scaninfo rsd1dv="100" />
+<verifier>
+<sc value="51.32" grade="" />
+</verifier>
+<moduleinfo>
+<width unit="pix">2.09</width>
+<height unit="pix">124.00</height>
+<ratio>59.46</ratio>
+</moduleinfo>
+</symbol>
+<box name="TestBarcodeDecoder::Decoded-CodeRegion" pos="1550 867 1561 991 1305 1007 1294 883" color="0 255 0" />
+<symbol type="CODE128" pos="1513 434 1519 501 1253 517 1247 450">
+<result length="8">42032610</result>
+<symbolinfo>
+<width unit="pix">294.49</width>
+<height unit="pix">67.19</height>
+<angle unit="deg">0.00</angle>
+<ratio>0.23</ratio>
+</symbolinfo>
+<scaninfo rsd1dv="100" />
+<verifier>
+<sc value="47.21" grade="" />
+</verifier>
+<moduleinfo>
+<width unit="pix">2.17</width>
+<height unit="pix">67.00</height>
+<ratio>30.93</ratio>
+</moduleinfo>
+</symbol>
+<box name="TestBarcodeDecoder::Decoded-CodeRegion" pos="1513 434 1519 501 1253 517 1247 450" color="0 255 0" />
+<symbol type="CODE128" pos="1863 739 1869 795 1505 827 1499 770">
+<result length="12">TR1463183001</result>
+<symbolinfo>
+<width unit="pix">398.45</width>
+<height unit="pix">56.22</height>
+<angle unit="deg">0.00</angle>
+<ratio>0.14</ratio>
+</symbolinfo>
+<scaninfo rsd1dv="90" />
+<verifier>
+<sc value="51.52" grade="" />
+</verifier>
+<moduleinfo>
+<width unit="pix">2.19</width>
+<height unit="pix">56.00</height>
+<ratio>25.59</ratio>
+</moduleinfo>
+</symbol>
+<box name="TestBarcodeDecoder::Decoded-CodeRegion" pos="1863 739 1869 795 1505 827 1499 770" color="0 255 0" />
+<line name="RunFiltered" pos="1344 240 1440 240" color="255 0 0" />
+<line name="RunFiltered" pos="1248 624 1440 624" color="255 0 0" />
+<box name="RoiAOBB" pos="1248 720 1248 144 1536 144 1536 720" color="0 0 139" />
+<line name="UnifiedDecoCtrl::2DRoi2Process" pos="1344 336 1536 336" color="0 0 139" />
+<line name="UnifiedDecoCtrl::2DRoi2Process" pos="1344 432 1536 432" color="0 0 139" />
+<box name="RoiAOBB" pos="1248 912 1248 720 1440 720 1440 912" color="0 0 139" />
+<line name="UnifiedDecoCtrl::2DRoi2Process" pos="1248 816 1440 816" color="0 0 139" />
+<line name="RunFiltered" pos="1728 624 1824 624" color="255 0 0" />
+<line name="RunFiltered" pos="1632 720 1728 720" color="255 0 0" />
+<line name="RunFiltered" pos="1824 1008 1920 1008" color="255 0 0" />
+<box name="RoiAOBB" pos="1824 1104 1824 816 1920 816 1920 1104" color="0 0 139" />
+<line name="UnifiedDecoCtrl::2DRoi2Process" pos="1824 912 1920 912" color="0 0 139" />
+<text name="TimeSegmenation" string="**** OVERALL TIMINGS ****" fontsize="10" pos="1898 50" color="0 255 0" />
+<text name="TimeSegmenation" string="TIME Seg:  74" fontsize="10" pos="1898 60" color="0 255 0" />
+<text name="TimeDeco" string="TIME Deco2D: 16" fontsize="10" pos="1898 70" color="0 255 0" />
+<text name="TimeDeco" string="TIME Deco1d:17" fontsize="10" pos="1898 80" color="0 255 0" />
+<text name="TimeDeco" string="TIME DecoPdf417:0" fontsize="10" pos="1898 90" color="0 255 0" />
+<text name="TimeTotalDeco" string="TIME TOTAL:107" fontsize="10" pos="1898 100" color="0 255 0" />
+<AcqFrames>0</AcqFrames>
+<DecoFrames>0</DecoFrames>
+<LostFrames>0</LostFrames>
+<FramesInQueue>0</FramesInQueue>
+<QueueSize>0</QueueSize>
+<ThisFrameNr>0</ThisFrameNr>
+</image>
+</camera>

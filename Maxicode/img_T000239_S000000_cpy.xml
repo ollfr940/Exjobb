@@ -1,0 +1,88 @@
+<?xml version="1.0"?>
+<camera name="CAM1" company="SICK AG, Identification &amp; Measuring" device="ConsoleSimu">
+<SW_Version>1.50</SW_Version>
+<ScaleBmp>1</ScaleBmp>
+<ScaleVelo>1</ScaleVelo>
+<BinShift>0</BinShift>
+<OrigImgSize width="0" height="0" />
+<image objectid="0">
+<UTC>0</UTC>
+<imageinfo type="BMP">
+<scale>1</scale>
+<resolution>100</resolution>
+<size width="0" length="0" />
+<origin x="0" y="0" />
+</imageinfo>
+<AvgStdDev>4.63</AvgStdDev><MaxStdDev>52.79</MaxStdDev><PDF417Params >1 0 </PDF417Params >
+<Params1D>51 2 0 255 0 0 </Params1D>
+<CodeConf_1>1 0 3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 </CodeConf_1>
+<Params2D>25 3 0 255 0 0 </Params2D>
+<MaxicodeParams>1 1 1 1 1 1 1 0 </MaxicodeParams>
+<box name="FinalRegion" pos="1389 252 1352 375 1680 475 1718 352" color="0 0 255" />
+<box name="FinalRegion" pos="1729 313 1744 263 1665 239 1650 289" color="0 0 255" />
+<box name="FinalRegion" pos="1665 465 1700 355 1450 273 1414 382" color="0 0 255" />
+<box name="FinalRegion" pos="1892 363 1907 313 1665 239 1650 289" color="0 0 255" />
+<box name="FinalRegion" pos="2023 396 2039 345 1678 242 1663 293" color="0 0 255" />
+<text name="SegmTime_PreProc" string="TIME PreProc:  15" fontsize="10" pos="1898 0" color="0 255 0" />
+<text name="SegmTime_Features" string="TIME Features: 19" fontsize="10" pos="1898 10" color="0 255 0" />
+<text name="SegmTime_ObjCreate" string="TIME ObjCreate:18" fontsize="10" pos="1898 20" color="0 255 0" />
+<symbol type="CODE128" pos="1691 344 1656 468 1416 394 1450 271">
+<result length="8">04510610</result>
+<symbolinfo>
+<width unit="pix">363.79</width>
+<height unit="pix">128.44</height>
+<angle unit="deg">0.00</angle>
+<ratio>0.35</ratio>
+</symbolinfo>
+<scaninfo rsd1dv="100" />
+<verifier>
+<sc value="50.05" grade="" />
+</verifier>
+<moduleinfo>
+<width unit="pix">2.04</width>
+<height unit="pix">128.00</height>
+<ratio>62.69</ratio>
+</moduleinfo>
+</symbol>
+<box name="TestBarcodeDecoder::Decoded-CodeRegion" pos="1691 344 1656 468 1416 394 1450 271" color="0 255 0" />
+<symbol type="CODE128" pos="2033 343 2016 394 1674 295 1689 245">
+<result length="12">TR1463183001</result>
+<symbolinfo>
+<width unit="pix">396.29</width>
+<height unit="pix">53.45</height>
+<angle unit="deg">0.00</angle>
+<ratio>0.13</ratio>
+</symbolinfo>
+<scaninfo rsd1dv="90" />
+<verifier>
+<sc value="48.92" grade="" />
+</verifier>
+<moduleinfo>
+<width unit="pix">2.13</width>
+<height unit="pix">53.00</height>
+<ratio>24.86</ratio>
+</moduleinfo>
+</symbol>
+<box name="TestBarcodeDecoder::Decoded-CodeRegion" pos="2033 343 2016 394 1674 295 1689 245" color="0 255 0" />
+<line name="RunFiltered" pos="1824 240 1920 240" color="255 0 0" />
+<box name="RoiAOBB" pos="1824 624 1824 144 2016 144 2016 624" color="0 0 139" />
+<line name="UnifiedDecoCtrl::2DRoi2Process" pos="1824 432 1968 432" color="0 0 139" />
+<line name="UnifiedDecoCtrl::2DRoi2Process" pos="1824 528 2016 528" color="0 0 139" />
+<box name="RoiAOBB" pos="1440 336 1440 -48 1728 -48 1728 336" color="0 0 139" />
+<line name="UnifiedDecoCtrl::2DRoi2Process" pos="1536 48 1728 48" color="0 0 139" />
+<line name="UnifiedDecoCtrl::2DRoi2Process" pos="1440 144 1632 144" color="0 0 139" />
+<line name="UnifiedDecoCtrl::2DRoi2Process" pos="1440 240 1632 240" color="0 0 139" />
+<text name="TimeSegmenation" string="**** OVERALL TIMINGS ****" fontsize="10" pos="1898 50" color="0 255 0" />
+<text name="TimeSegmenation" string="TIME Seg:  53" fontsize="10" pos="1898 60" color="0 255 0" />
+<text name="TimeDeco" string="TIME Deco2D: 12" fontsize="10" pos="1898 70" color="0 255 0" />
+<text name="TimeDeco" string="TIME Deco1d:16" fontsize="10" pos="1898 80" color="0 255 0" />
+<text name="TimeDeco" string="TIME DecoPdf417:0" fontsize="10" pos="1898 90" color="0 255 0" />
+<text name="TimeTotalDeco" string="TIME TOTAL:81" fontsize="10" pos="1898 100" color="0 255 0" />
+<AcqFrames>0</AcqFrames>
+<DecoFrames>0</DecoFrames>
+<LostFrames>0</LostFrames>
+<FramesInQueue>0</FramesInQueue>
+<QueueSize>0</QueueSize>
+<ThisFrameNr>0</ThisFrameNr>
+</image>
+</camera>
