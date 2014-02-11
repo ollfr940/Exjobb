@@ -118,7 +118,7 @@ Mat createLBPFeatures(int numberOfImages, int tileSize, int imageSize, int tileN
 			{
 				tile = im(Rect(i*tileSize, j*tileSize, tileSize, tileSize));
 				meanStdDev(tile, mean, std);
-				
+
 				if(std.at<double>(0,0) < 20)
 					featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,0) = (tileSize-2)*(tileSize-2);
 				else

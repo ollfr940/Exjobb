@@ -13,7 +13,7 @@ int _tmain(int argc, _TCHAR* argv[])
 {
 
 	int images = 140;
-	int training_images = 50;
+	int trainingImages = 50;
 	int tileSize = 64;
 	int imageSize = 2048;
 	int tileNum = imageSize/tileSize;
@@ -29,7 +29,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	CvMLData cvml;
 	cvml.read_csv("LBP140x64.txt");
 	cvml.set_response_idx(0);
-	CvTrainTestSplit cvtts(training_images*tileNum*tileNum, true);
+	CvTrainTestSplit cvtts(trainingImages*tileNum*tileNum, true);
 	cvml.set_train_test_split(&cvtts);
 
 	CvBoost boost;
@@ -46,10 +46,10 @@ int _tmain(int argc, _TCHAR* argv[])
 	cout << "Train error: " <<fl1 << endl 
 		<< "Test error: " << fl2 << endl;
 	
-	//boost.save("./LBP140x50x30_boost30.xml", "boost");
+	boost.save("./LBP140x50x30_boost30_2.xml", "boost");
 	CvSeq* weights = boost.get_weak_predictors();
 	cout << weights->total << endl;
-    //boost.save("weights_LBP140*50*30.txt");
+	
 	
 	return 0;
 
