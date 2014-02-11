@@ -42,10 +42,10 @@ string intToStrGroundTruth(int i)
 	return name;
 }
 
-void writeCvMatToFile(Mat& m, const char* filename)
+void writeFileToMatlab(cv::Mat& m, const char* filename)
 {
 	ofstream fout(filename);
-	
+
 	if(!fout)
 	{
 		cout<<"File Not Opened"<<endl;  return;
@@ -53,11 +53,10 @@ void writeCvMatToFile(Mat& m, const char* filename)
 
 	for(int i=0; i<m.rows; i++)
 	{
-		for(int j=0; j<m.cols-1; j++)
+		for(int j=0; j<m.cols; j++)
 		{
-			fout<<m.at<float>(i,j)<<"\t";
+			fout<<m.at<float>(i,j)<<' ';
 		}
-		fout << m.at<float>(i,m.cols-1);
 		fout<<endl;
 	}
 

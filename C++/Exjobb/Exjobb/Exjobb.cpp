@@ -18,14 +18,15 @@ int _tmain(int argc, _TCHAR* argv[])
 	int imageSize = 2048;
 	int tileNum = imageSize/tileSize;
 	
-	//vector<char> responses = getResponses(images,tileSize,imageSize,tileNum);
+	vector<char> responses = getResponses(images,tileSize,imageSize,tileNum);
 
 	//Mat features = createSimpleFeatures(images,tileSize,imageSize,tileNum);
-	//Mat LBP = createLBPFeatures(images,tileSize,imageSize,tileNum);
+	Mat LBP = createLBPFeatures(images,tileSize,imageSize,tileNum);
 	
-	//writeMatToFile(LBP,responses,"LBP140x64.txt");
+	writeMatToFile(LBP,responses,"LBP140x64.txt");
+	writeFileToMatlab(LBP,"Matlab_LBP140x64.txt");
 	
-	
+	/*
 	CvMLData cvml;
 	cvml.read_csv("LBP140x64.txt");
 	cvml.set_response_idx(0);
@@ -49,7 +50,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	boost.save("./LBP140x50x30_boost30_2.xml", "boost");
 	CvSeq* weights = boost.get_weak_predictors();
 	cout << weights->total << endl;
-	
+	*/
 	
 	return 0;
 
