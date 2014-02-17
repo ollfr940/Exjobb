@@ -7,48 +7,65 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv/ml.h>
-using namespace std;
-using namespace cv;
+#include "cvplot.h"
 
-string intToStrIm(int i)
+
+std::string intToStrIm(int i)
 {
-	string bla = "000000";
-	stringstream s;
-	stringstream ss;
+	std::string bla = "000000";
+	std::stringstream s;
+	std::stringstream ss;
 	ss<< i%5;
 	s<<(21 + i/5);
-	string ret ="";
-	string ret2;
+	std::string ret ="";
+	std::string ret2;
 	ss>>ret;
 	s>>ret2;
-	string name = bla.substr(0,bla.size()-ret.size());
+	std::string name = bla.substr(0,bla.size()-ret.size());
 	name = "img_T0002"+ret2+"_S"+name+ret+"_cpy.bmp";
 	return name;
 }
 
-string intToStrGroundTruth(int i)
+std::string intToStrGroundTruth(int i)
 {
-	string bla = "000000";
-	stringstream s;
-	stringstream ss;
+	std::string bla = "000000";
+	std::stringstream s;
+	std::stringstream ss;
 	ss<<i%5;
 	s<<(21 + i/5);
-	string ret ="";
-	string ret2;
+	std::string ret ="";
+	std::string ret2;
 	ss>>ret;
 	s>>ret2;
-	string name = bla.substr(0,bla.size()-ret.size());
+	std::string name = bla.substr(0,bla.size()-ret.size());
 	name = "img_T0002"+ret2+"_S"+name+ret+"_cpy_mask.png";
 	return name;
 }
 
+void writeMatToXML(cv::Mat& m,const char* filename)
+{
+	printf("Saving test data....\n\n");
+	cv::FileStorage fs(filename, cv::FileStorage::WRITE );
+	fs << "testData" << m; 
+	fs.release();
+}
+
+cv::Mat readMatFromXML(const char* filename)
+{
+	printf("Reading test data....\n\n");
+	cv::Mat m;
+	cv::FileStorage fs(filename, cv::FileStorage::READ );
+	fs["testData"] >> m;
+	return m;
+}
+
 void writeFileToMatlab(cv::Mat& m, const char* filename)
 {
-	ofstream fout(filename);
+	std::ofstream fout(filename);
 
 	if(!fout)
 	{
-		cout<<"File Not Opened"<<endl;  return;
+		std::cout<<"File Not Opened"<<std::endl;  return;
 	}
 
 	for(int i=0; i<m.rows; i++)
@@ -57,19 +74,20 @@ void writeFileToMatlab(cv::Mat& m, const char* filename)
 		{
 			fout<<m.at<float>(i,j)<<' ';
 		}
-		fout<<endl;
+		fout<<std::endl;
 	}
 
 	fout.close();
 }
 
-void writeMatToFile(cv::Mat& m, vector<char> v, const char* filename)
+
+void writeMatToFile(cv::Mat& m, std::vector<char> v, const char* filename)
 {
-	ofstream fout(filename);
+	std::ofstream fout(filename);
 
 	if(!fout)
 	{
-		cout<<"File Not Opened"<<endl;  return;
+		std::cout<<"File Not Opened"<<std::endl;  return;
 	}
 
 	for(int i=0; i<m.rows; i++)
@@ -80,7 +98,7 @@ void writeMatToFile(cv::Mat& m, vector<char> v, const char* filename)
 			fout<<m.at<float>(i,j)<<',';
 		}
 		fout << m.at<float>(i,m.cols-1);
-		fout<<endl;
+		fout<<std::endl;
 	}
 
 	fout.close();
@@ -88,34 +106,34 @@ void writeMatToFile(cv::Mat& m, vector<char> v, const char* filename)
 
 float calcStandardDeviation(cv::Mat& tile)
 {
-	Mat mean;
-	Mat std;
+	cv::Mat mean;
+	cv::Mat std;
 	cv::meanStdDev(tile, mean, std);
 	return std.at<double>(0,0);
 }
 
 
-Mat createLBPFeatures(int numberOfImages,int firstImage, int tileSize, int imageSize, int tileNum)
+cv::Mat createLBPFeatures(int numberOfImages,int firstImage, int tileSize, int imageSize, int tileNum)
 {
 	printf("Calculate LBP features....\n\n");
 	int features = 256;
-	Mat featureMatrix = Mat::zeros(numberOfImages*tileNum*tileNum,features, CV_32FC1);
-	Mat binary = Mat::zeros(tileSize-2,tileSize-2,CV_32FC1);
+	cv::Mat featureMatrix = cv::Mat::zeros(numberOfImages*tileNum*tileNum,features, CV_32FC1);
+	cv::Mat binary = cv::Mat::zeros(tileSize-2,tileSize-2,CV_32FC1);
 	int tiles = imageSize/tileSize, channels[] = {0, 1}, histSize[] = {256};
 	float range[] = {0, 256};
 	const float* ranges[] = {range};
-	Mat im, tile, mean, std, block, LBPblock, bp;
-	MatND hist;
+	cv::Mat im, tile, mean, std, block, LBPblock, bp;
+	cv::MatND hist;
 
 	for(int r = 0 ; r< numberOfImages ; r++)
 	{
-		im = imread(intToStrIm(r+firstImage), CV_LOAD_IMAGE_GRAYSCALE);
-		
+		im = cv::imread(intToStrIm(r+firstImage), CV_LOAD_IMAGE_GRAYSCALE);
+
 		for(int i=0; i<tileNum; i++)
 		{
 			for(int j=0; j<tileNum; j++)
 			{
-				tile = im(Rect(i*tileSize, j*tileSize, tileSize, tileSize));
+				tile = im(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
 				meanStdDev(tile, mean, std);
 
 				if(std.at<double>(0,0) < 20)
@@ -126,39 +144,39 @@ Mat createLBPFeatures(int numberOfImages,int firstImage, int tileSize, int image
 					{
 						for(int jj=0; jj<tileSize-2; jj++)
 						{
-							block = tile(Rect(ii,jj,3,3));
-							compare(block,block.at<uchar>(1,1),LBPblock,CMP_GT);
+							block = tile(cv::Rect(ii,jj,3,3));
+							cv::compare(block,block.at<uchar>(1,1),LBPblock,cv::CMP_GT);
 							LBPblock.convertTo(bp,CV_32FC1);
 							binary.at<float>(ii,jj) = (bp.at<float>(0,0)+bp.at<float>(1,0)*2+bp.at<float>(2,0)*4+bp.at<float>(2,1)*8+
-											bp.at<float>(2,2)*16+bp.at<float>(1,2)*32+bp.at<float>(0,2)*64+bp.at<float>(0,1)*128)/255;
+								bp.at<float>(2,2)*16+bp.at<float>(1,2)*32+bp.at<float>(0,2)*64+bp.at<float>(0,1)*128)/255;
 
-							
+
 						}
 					}
-					calcHist(&binary,1,channels,Mat(),hist,1,histSize,ranges,true,false);
-					
+					calcHist(&binary,1,channels,cv::Mat(),hist,1,histSize,ranges,true,false);
+
 					for(int f=0; f<features; f++)
 						featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,f) = hist.at<float>(f);
 				}
 			}
 		}
-		cout << "image " << r+1 << endl;
+		std::cout << "image " << r+1 << std::endl;
 	}
 	return featureMatrix;
 }
 
-Mat createSimpleFeatures(int numberOfImages,int firstImage, int tileSize, int imageSize, int tileNum)
+cv::Mat createSimpleFeatures(int numberOfImages,int firstImage, int tileSize, int imageSize, int tileNum)
 {
 	printf("Calculate simple features....\n\n");
 	int features = 2;
-	Mat featureMatrix = Mat::zeros(numberOfImages*tileNum*tileNum,features, CV_32FC1);
+	cv::Mat featureMatrix = cv::Mat::zeros(numberOfImages*tileNum*tileNum,features, CV_32FC1);
 	int tiles = imageSize/tileSize;
-	Mat im, tile, harris, harrisNorm, tileharris, eigenVV;
+	cv::Mat im, tile, harris, harrisNorm, tileharris, eigenVV;
 
 	for(int r = 0 ; r< numberOfImages ; r++)
 	{
-		im = imread(intToStrIm(r+firstImage), CV_LOAD_IMAGE_GRAYSCALE);
-		cornerHarris(im,harris,2,3,0.05,BORDER_DEFAULT );
+		im = cv::imread(intToStrIm(r+firstImage), CV_LOAD_IMAGE_GRAYSCALE);
+		cv::cornerHarris(im,harris,2,3,0.05,cv::BORDER_DEFAULT );
 		//normalize(harris, harrisNorm, 0, 255, NORM_MINMAX, CV_32FC1, Mat());
 		//cv::cornerEigenValsAndVecs(im,eigenVV,tileSize,3,BORDER_DEFAULT);
 
@@ -166,33 +184,90 @@ Mat createSimpleFeatures(int numberOfImages,int firstImage, int tileSize, int im
 		{
 			for(int j=0; j<tileNum; j++)
 			{
-				tile = im(Rect(i*tileSize, j*tileSize, tileSize, tileSize));
-				tileharris = harris(Rect(i*tileSize, j*tileSize, tileSize, tileSize));
+				tile = im(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
+				tileharris = harris(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
 
 				featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,0) = calcStandardDeviation(tile);
 				featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,1) = cv::sum(tileharris)(0);
 
 			}
 		}
-		cout << "image " << r+1 << endl;
+		std::cout << "image " << r+1 << std::endl;
 	}
 	return featureMatrix;
 }
 
-vector<char> getResponses(int numberOfImages,int firstImage,int tileSize,int imageSize,int tileNum)
+cv::Mat createFastCornerFeatures(int numberOfImages,int firstImage, int tileSize, int imageSize, int tileNum,int threashold)
 {
-	printf("Calculate responses....\n\n");
-	vector<char> responses;
-	Mat groundTruth, groundTruthTile;
+	printf("Calculate FAST corner detection features....\n\n");
+	int features = 16;
+	cv::Mat featureMatrix = cv::Mat::zeros(numberOfImages*tileNum*tileNum,features, CV_32FC1);
+	int tiles = imageSize/tileSize;
+	cv::Mat im, tile;
+	cv::FastFeatureDetector fast;
+	//std::vector<cv::KeyPoint,std::allocator<cv::KeyPoint>> keyPoint;
+	std::vector<cv::KeyPoint> keyPoint;
 
 	for(int r = 0 ; r< numberOfImages ; r++)
 	{
-		groundTruth = imread(intToStrGroundTruth(r+firstImage), CV_LOAD_IMAGE_GRAYSCALE);
+		im = cv::imread(intToStrIm(r+firstImage), CV_LOAD_IMAGE_GRAYSCALE);
+		fast.detect(im,keyPoint);
+		
 		for(int i=0; i<tileNum; i++)
 		{
 			for(int j=0; j<tileNum; j++)
 			{
-				groundTruthTile = groundTruth(Rect(i*tileSize, j*tileSize, tileSize, tileSize));
+				tile = im(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
+				cv::FAST(tile,keyPoint,threashold,true);
+				std::cout << keyPoint.size() << std::endl;
+				featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,0) = calcStandardDeviation(tile);
+
+
+			}
+		}
+		std::cout << "image " << r+1 << std::endl;
+	}
+	return featureMatrix;
+}
+
+std::vector<char> getResponses1D(int numberOfImages,int firstImage,int tileSize,int imageSize,int tileNum)
+{
+	printf("Calculate 1D responses....\n\n");
+	std::vector<char> responses;
+	cv::Mat groundTruth, groundTruthTile;
+
+	for(int r = 0 ; r< numberOfImages ; r++)
+	{
+		groundTruth = cv::imread(intToStrGroundTruth(r+firstImage), CV_LOAD_IMAGE_GRAYSCALE);
+		for(int i=0; i<tileNum; i++)
+		{
+			for(int j=0; j<tileNum; j++)
+			{
+				groundTruthTile = groundTruth(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
+				if(cv::sum(groundTruthTile)(0) <= 100*tileSize*tileSize && cv::countNonZero(groundTruthTile) > 0.75*tileSize*tileSize)
+					responses.push_back('T');
+				else
+					responses.push_back('F');
+			}
+		}
+	}
+	return responses;
+}
+
+std::vector<char> getResponses2D(int numberOfImages,int firstImage,int tileSize,int imageSize,int tileNum)
+{
+	printf("Calculate 2D responses....\n\n");
+	std::vector<char> responses;
+	cv::Mat groundTruth, groundTruthTile;
+
+	for(int r = 0 ; r< numberOfImages ; r++)
+	{
+		groundTruth = cv::imread(intToStrGroundTruth(r+firstImage), CV_LOAD_IMAGE_GRAYSCALE);
+		for(int i=0; i<tileNum; i++)
+		{
+			for(int j=0; j<tileNum; j++)
+			{
+				groundTruthTile = groundTruth(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
 
 				if(cv::sum(groundTruthTile)(0) > 150*tileSize*tileSize)
 					responses.push_back('T');
@@ -204,63 +279,80 @@ vector<char> getResponses(int numberOfImages,int firstImage,int tileSize,int ima
 	return responses;
 }
 
-
-Mat testImages(int firstImage, int scaleDown, int tileSize, int imageSize, int tileNum, CvBoost boost, Mat featureMat,vector<char> responses)
+void testImages(int firstImage,int k, int scaleDown, int tileSize, int imageSize, int tileNum, CvBoost& boost, cv::Mat& featureMat,std::vector<char>& responses)
 {
 	int imPos = tileSize/scaleDown;
 
-	Mat testSample(1,257, CV_32FC1 );
-	Mat Im(imageSize,imageSize,16);
-	Mat resizedIm(imageSize/scaleDown,imageSize/scaleDown,16);
-	
+	cv::Mat testSample(1,257, CV_32FC1 );
+	cv::Mat Im(imageSize,imageSize,16);
+	cv::Mat resizedIm(imageSize/scaleDown,imageSize/scaleDown,16);
+
 
 	for(int i=0; i<scaleDown*scaleDown; i++)
 	{
-		Mat im = imread(intToStrIm(firstImage+i));
-		resize(im,resizedIm,Size(imageSize/scaleDown,imageSize/scaleDown));
+		cv::Mat im = cv::imread(intToStrIm(firstImage+k+i));
+		resize(im,resizedIm,cv::Size(imageSize/scaleDown,imageSize/scaleDown));
 
-			for( int y = 0; y < tileNum*tileNum; y++ )
+		for( int y = 0; y < tileNum*tileNum; y++ )
+		{
+			testSample.at<float>(0,0) = responses[y+(i+k)*tileNum*tileNum];
+			for(int x=1; x < 257; x++)
 			{
-				testSample.at<float>(0,0) = responses[y+i*tileNum*tileNum];
-				for(int x=1; x < 257; x++)
-				{
 
-					testSample.at<float>(0,x) = featureMat.at<float>(y+i*tileNum*tileNum,x-1);
-				}
-				int response = (int)boost.predict( testSample );
-
-				if(response == 2)
-					rectangle(resizedIm,cvPoint(y/tileNum*imPos,y%tileNum*imPos),cvPoint(y/tileNum*imPos + imPos,y%tileNum*imPos+imPos),CV_RGB(0,255,0),1,8);
+				testSample.at<float>(0,x) = featureMat.at<float>(y+(i+k)*tileNum*tileNum,x-1);
 			}
-		resizedIm.copyTo(Im(Rect(i/scaleDown*(imageSize/scaleDown),i%scaleDown*(imageSize/scaleDown),imageSize/scaleDown,imageSize/scaleDown)));
-			
+			int response = (int)boost.predict( testSample );
+
+			if(response == 2)
+				rectangle(resizedIm,cvPoint(y/tileNum*imPos,y%tileNum*imPos),cvPoint(y/tileNum*imPos + imPos,y%tileNum*imPos+imPos),CV_RGB(0,255,0),1,8);
+			else if(responses[y+(i+k)*tileNum*tileNum] == 'T')
+				rectangle(resizedIm,cvPoint(y/tileNum*imPos,y%tileNum*imPos),cvPoint(y/tileNum*imPos + imPos,y%tileNum*imPos+imPos),CV_RGB(255,0,0),1,8);
+		}
+		resizedIm.copyTo(Im(cv::Rect(i/scaleDown*(imageSize/scaleDown),i%scaleDown*(imageSize/scaleDown),imageSize/scaleDown,imageSize/scaleDown)));
+
 	}
-	return Im;
+	cv::namedWindow("Test image",CV_WINDOW_AUTOSIZE);
+	imshow("Test image", Im);
+	cv::waitKey();
+	cv::destroyWindow("Test image");
 }
 
-Mat testForPlot(int firstImage,int imNum, int tileSize, int imageSize, int tileNum, CvBoost boost, Mat featureMat,vector<char> responses)
+void testForPlot(int firstImage,int imNum, int tileSize, int imageSize, int tileNum, CvBoost boost, cv::Mat& featureMat,std::vector<char>& responses, float* trueClass, float* falseClass)
 {
-	Mat trueClass = Mat::zeros(imNum,1,CV_32FC1);
+
 	for(int i=0; i<imNum; i++)
 	{
-	Mat testSample(1,257, CV_32FC1 );
-	Mat im = imread(intToStrIm(firstImage-1+i));
-	for( int y = 0; y < tileNum*tileNum; y++ )
-	{
-		testSample.at<float>(0,0) = responses[y+(firstImage-1+i)*tileNum*tileNum];
+		trueClass[i] = 0;
+		falseClass[i] = 0;
+		int trueReal = 0;
+		cv::Mat testSample(1,257, CV_32FC1 );
 
-		for(int x=1; x < 257; x++)
+		for( int y = 0; y < tileNum*tileNum; y++ )
 		{
+			testSample.at<float>(0,0) = responses[y+i*tileNum*tileNum];
+			for(int x=1; x < 257; x++)
+			{
 
-			testSample.at<float>(0,x) = featureMat.at<float>(y+(firstImage-1+i)*tileNum*tileNum,x-1);
+				testSample.at<float>(0,x) = featureMat.at<float>(y+i*tileNum*tileNum,x-1);
+			}
+			int response = (int)boost.predict( testSample );
+
+			if(responses[y+i*tileNum*tileNum] == 'T')
+				trueReal++;
+
+			if(response == 2 && responses[y+i*tileNum*tileNum] == 'T')
+				trueClass[i]++;
+
+			if(response == 2 && responses[y+i*tileNum*tileNum] == 'F')
+				falseClass[i]++;
 		}
-		int response = (int)boost.predict( testSample );
-		if(response == 2 && responses[y+(firstImage-1+i)*tileNum*tileNum] == 'T')
-		{
-			cout << "jlj" << endl;
-			trueClass.at<float>(i,0) += 1;
-		}
+		if(trueReal > 0)
+			trueClass[i] = trueClass[i]/trueReal*100;
+		else
+			trueClass[i] = -20;
 	}
-	}
-	return trueClass;
+	PlotManager pm;
+	pm.Plot("True detection in percent", trueClass  , imNum, 1,0,0,255);
+	pm.Plot("True detection in percent", falseClass  , imNum, 1,255,0,0);
+	cv::waitKey();
 }
