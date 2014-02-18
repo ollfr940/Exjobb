@@ -197,7 +197,57 @@ cv::Mat createSimpleFeatures(int numberOfImages,int firstImage, int tileSize, in
 	return featureMatrix;
 }
 
-cv::Mat createFastCornerFeatures(int numberOfImages,int firstImage, int tileSize, int imageSize, int tileNum,int threashold)
+cv::Mat createDistanceFeatures(int numberOfImages,int firstImage, int tileSize, int imageSize, int tileNum,int threshold1,int threshold2)
+{
+	printf("Calculate Distance features....\n\n");
+	int features = 3;
+	cv::Mat featureMatrix = cv::Mat::zeros(numberOfImages*tileNum*tileNum,features, CV_32FC1);
+	int tiles = imageSize/tileSize;
+	int score1D;
+	cv::Mat im, distanceTile, sobxTile, sobyTile , canny, canny2, distanceMap, mean, std, sobx, soby;
+	cv::Mat structureTensor = cv::Mat::zeros(2,2,CV_32FC1);
+	std::vector<float> eigenvalues;
+
+	for(int r = 0 ; r< numberOfImages ; r++)
+	{
+		im = cv::imread(intToStrIm(r+firstImage), CV_LOAD_IMAGE_GRAYSCALE);
+		cv::Canny(im,canny,threshold1,threshold2);
+		cv::threshold(canny,canny,128,255, cv::THRESH_BINARY_INV);
+		cv::distanceTransform(canny,distanceMap,CV_DIST_L1,3);
+		
+		cv::GaussianBlur( im, im, cv::Size(3,3), 0, 0, cv::BORDER_DEFAULT );
+		cv::Sobel( im, sobx, CV_32FC1, 1, 0, 3, 1, 0, cv::BORDER_DEFAULT );
+		//cv::convertScaleAbs( sobx, gradx);
+		cv::Sobel(im, soby, CV_32FC1, 0, 1, 3, 1, 0, cv::BORDER_DEFAULT );
+
+
+		for(int i=0; i<tileNum; i++)
+		{
+			for(int j=0; j<tileNum; j++)
+			{
+				distanceTile = distanceMap(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
+				sobxTile = sobx(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
+				sobyTile = soby(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
+
+				cv::meanStdDev(distanceTile, mean, std);
+				structureTensor.at<float>(0,0) = sobxTile.dot(sobxTile);
+				structureTensor.at<float>(0,1) = sobxTile.dot(sobyTile);
+				structureTensor.at<float>(1,0) = sobxTile.dot(sobyTile);
+				structureTensor.at<float>(1,1) = sobyTile.dot(sobyTile);
+				cv::eigen(structureTensor, eigenvalues);
+				score1D = cv::pow((eigenvalues[0]-eigenvalues[1]),2)/(pow(eigenvalues[0],2)*pow(eigenvalues[1],2));
+
+				featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,0) = mean.at<double>(0,0);
+				featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,1) = std.at<double>(0,0);
+				featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,2) = score1D;
+			}
+		}
+		std::cout << "image " << r+1 << std::endl;
+	}
+	return featureMatrix;
+}
+
+/*cv::Mat createFastCornerFeatures(int numberOfImages,int firstImage, int tileSize, int imageSize, int tileNum,int threashold)
 {
 	printf("Calculate FAST corner detection features....\n\n");
 	int features = 16;
@@ -229,7 +279,7 @@ cv::Mat createFastCornerFeatures(int numberOfImages,int firstImage, int tileSize
 	}
 	return featureMatrix;
 }
-
+*/
 std::vector<char> getResponses1D(int numberOfImages,int firstImage,int tileSize,int imageSize,int tileNum)
 {
 	printf("Calculate 1D responses....\n\n");
@@ -281,9 +331,10 @@ std::vector<char> getResponses2D(int numberOfImages,int firstImage,int tileSize,
 
 void testImages(int firstImage,int k, int scaleDown, int tileSize, int imageSize, int tileNum, CvBoost& boost, cv::Mat& featureMat,std::vector<char>& responses)
 {
+	int features = featureMat.cols;
 	int imPos = tileSize/scaleDown;
 
-	cv::Mat testSample(1,257, CV_32FC1 );
+	cv::Mat testSample(1,features+1, CV_32FC1 );
 	cv::Mat Im(imageSize,imageSize,16);
 	cv::Mat resizedIm(imageSize/scaleDown,imageSize/scaleDown,16);
 
@@ -296,12 +347,12 @@ void testImages(int firstImage,int k, int scaleDown, int tileSize, int imageSize
 		for( int y = 0; y < tileNum*tileNum; y++ )
 		{
 			testSample.at<float>(0,0) = responses[y+(i+k)*tileNum*tileNum];
-			for(int x=1; x < 257; x++)
+			for(int x=1; x < features+1; x++)
 			{
 
 				testSample.at<float>(0,x) = featureMat.at<float>(y+(i+k)*tileNum*tileNum,x-1);
 			}
-			int response = (int)boost.predict( testSample );
+			int response = (int)boost.predict( testSample); //,cv::Mat(),cv::Range::all(),true);
 
 			if(response == 2)
 				rectangle(resizedIm,cvPoint(y/tileNum*imPos,y%tileNum*imPos),cvPoint(y/tileNum*imPos + imPos,y%tileNum*imPos+imPos),CV_RGB(0,255,0),1,8);
@@ -319,24 +370,25 @@ void testImages(int firstImage,int k, int scaleDown, int tileSize, int imageSize
 
 void testForPlot(int firstImage,int imNum, int tileSize, int imageSize, int tileNum, CvBoost boost, cv::Mat& featureMat,std::vector<char>& responses, float* trueClass, float* falseClass)
 {
-
+	int features = featureMat.cols;
+	double totalTrueReal = 0, totalTrueClass = 0;
 	for(int i=0; i<imNum; i++)
 	{
 		trueClass[i] = 0;
 		falseClass[i] = 0;
 		int trueReal = 0;
-		cv::Mat testSample(1,257, CV_32FC1 );
+		cv::Mat testSample(1,features+1, CV_32FC1 );
 
 		for( int y = 0; y < tileNum*tileNum; y++ )
 		{
 			testSample.at<float>(0,0) = responses[y+i*tileNum*tileNum];
-			for(int x=1; x < 257; x++)
+			for(int x=1; x < features+1; x++)
 			{
 
 				testSample.at<float>(0,x) = featureMat.at<float>(y+i*tileNum*tileNum,x-1);
 			}
-			int response = (int)boost.predict( testSample );
-
+			float response = (int)boost.predict( testSample, cv::Mat(),cv::Range::all(),true,false);
+			 std::cout << response << std::endl;
 			if(responses[y+i*tileNum*tileNum] == 'T')
 				trueReal++;
 
@@ -346,13 +398,42 @@ void testForPlot(int firstImage,int imNum, int tileSize, int imageSize, int tile
 			if(response == 2 && responses[y+i*tileNum*tileNum] == 'F')
 				falseClass[i]++;
 		}
+
+		totalTrueReal += trueReal;
+		totalTrueClass += trueClass[i];
+
 		if(trueReal > 0)
 			trueClass[i] = trueClass[i]/trueReal*100;
 		else
 			trueClass[i] = -20;
+
 	}
+	std::cout << "Amount of true tiles detected: " << totalTrueClass/totalTrueReal << std::endl;
 	PlotManager pm;
 	pm.Plot("True detection in percent", trueClass  , imNum, 1,0,0,255);
 	pm.Plot("True detection in percent", falseClass  , imNum, 1,255,0,0);
 	cv::waitKey();
+}
+
+void visualizeFeature(int image,int imageSize, int tileNum, int feature, cv::Mat& featureData)
+{
+	cv::Mat featureIm = cv::Mat::zeros(tileNum,tileNum,CV_32FC1);
+	cv::Mat im = cv::imread(intToStrIm(image),CV_LOAD_IMAGE_GRAYSCALE);
+	cv::resize(im,im,cv::Size(imageSize/2,imageSize/2));
+	std::cout << featureData.size() << std::endl;
+
+	for(int i=0; i<tileNum*tileNum; i++)
+	{
+		featureIm.at<float>(i/tileNum,i%tileNum) = featureData.at<float>(image*tileNum*tileNum + i,feature);
+	}
+	cv::resize(featureIm,featureIm,cv::Size(imageSize/2,imageSize/2));
+	cv::normalize(featureIm, featureIm, 0.0, 1.0, cv::NORM_MINMAX,CV_8UC1);
+	cv::equalizeHist(featureIm,featureIm);
+	cv::namedWindow("image",CV_WINDOW_AUTOSIZE);
+	imshow("image", im);
+
+	cv::namedWindow("Test image",CV_WINDOW_AUTOSIZE);
+	imshow("Test image", featureIm);
+	cv::waitKey();
+	cv::destroyWindow("Test image");
 }
