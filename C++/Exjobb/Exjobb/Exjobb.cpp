@@ -13,35 +13,38 @@ using namespace cv;
 int _tmain(int argc, _TCHAR* argv[])
 {
 	bool training =  false;
+	bool cascadeTesting = false;
 	int images = 100;
 	int trainingImages = 100;
-	int tileSize = 64;
+	int tileSize = 32;
+	float strongClassThres = -5;
+	string codeType = "all";
 	int imageSize = 2048;
 	int tileNum = imageSize/tileSize;
 
 	if(training)
-	{
-		//vector<char> trainingResponses = getResponses1D(images,0,tileSize,imageSize,tileNum);			
-		vector<char> trainingResponses = getResponses2D(images,0,tileSize,imageSize,tileNum);
+	{		
+		vector<char> trainingResponses = getResponses(images,0,tileSize,imageSize,tileNum,true,codeType);
 
-		//Mat features = createSimpleFeatures(images,tileSize,imageSize,tileNum);
-		Mat trainingData = createLBPFeatures(images,0,tileSize,imageSize,tileNum);
-		//Mat trainingData = createDistanceFeatures(images,2,tileSize,imageSize,tileNum,100,300);
-		//visualizeFeature(0,imageSize,tileNum,0,trainingData);
-		writeMatToFile(trainingData,trainingResponses,"LBP100_2D.txt");
+		Mat trainingData = createStdFeatures(images,0,tileSize,imageSize,tileNum);					//
+		//Mat trainingData = createLBPFeatures(images,0,tileSize,imageSize,tileNum);
+		//Mat trainingData = createDistanceFeatures(images,0,tileSize,imageSize,tileNum,100,300);
+		//Mat trainingData = createFastCornerFeatures(images,0,tileSize,imageSize,tileNum);
+		//Mat trainingData = createBRISKFeatures(images,0,tileSize,imageSize,tileNum);
+		//visualizeFeature(0,imageSize,tileSize,tileNum,0,trainingData);
+		writeMatToFile(trainingData,trainingResponses,"std100_2D.txt");							//
 
 		CvMLData cvml;
-		cvml.read_csv("LBP100_2D.txt");
+		cvml.read_csv("std100_2D.txt");															//
 		cvml.set_response_idx(0);
 		CvTrainTestSplit cvtts(trainingImages*tileNum*tileNum, true);
 		cvml.set_train_test_split(&cvtts);
 
 		CvBoost boost;
 		printf("Training....\n");
-		boost.train(&cvml, CvBoostParams(CvBoost::GENTLE, 100, 0.95, 1, false, 0), false);
+		boost.train(&cvml, CvBoostParams(CvBoost::GENTLE, 100, 0.5, 1, false, 0), false);				//
 
 
-		vector<float> train_responses, test_responses;
 		//Calculate the training error
 		float fl1 = boost.calc_error(&cvml,CV_TRAIN_ERROR);
 		//Calculate the test error
@@ -50,38 +53,39 @@ int _tmain(int argc, _TCHAR* argv[])
 		cout << "Train error: " <<fl1 << endl 
 			<< "Test error: " << fl2 << endl << endl;
 
-		boost.save("./LBP100_boost100_2D.xml", "boost");
-		CvSeq* weights = boost.get_weak_predictors();
-		cout << weights->total << endl;
+		boost.save("./std100_boost100_2D.xml", "boost");											//
 
 
 		int scaleDown = 8;
 		int firstImage = trainingImages;
-		const int imNum = 165;
-		//vector<char> testResponses = getResponses1D(imNum,firstImage,tileSize,imageSize,tileNum);
-		vector<char> testResponses = getResponses2D(imNum,firstImage,tileSize,imageSize,tileNum);
+		const int imNum = 165;																		//
 
+		vector<char> testResponses = getResponses(imNum,firstImage,tileSize,imageSize,tileNum,false,codeType);
 		printf("Calculate features for testing:\n\n");
-		//Mat testData = createDistanceFeatures(imNum,firstImage,tileSize,imageSize,tileNum,100,300);
-		Mat testData = createLBPFeatures(imNum,firstImage,tileSize,imageSize,tileNum);
-		writeMatToXML(testData,"LBP165_2D.xml");
-		//testImages(firstImage,scaleDown,tileSize,imageSize,tileNum,boost,testData,testResponses);
+		//Mat testData = createDistanceFeatures(imNum,firstImage,tileSize,imageSize,tileNum,100,300);	//
+		Mat testData = createStdFeatures(imNum,firstImage,tileSize,imageSize,tileNum);
 
-		float b[imNum], c[imNum]; testForPlot(firstImage,imNum,tileSize,imageSize,tileNum,boost,testData,testResponses,b,c);
+		writeMatToXML(testData,"std165_2D.xml");													//
+		float b[imNum], c[imNum];
+		evaluateResult(firstImage,50,scaleDown,imNum,tileSize,imageSize,tileNum,boost,testData,testResponses,b,c,strongClassThres);
+	}
+	else if(cascadeTesting)
+	{
+
 	}
 	else
 	{
 		//Test with saved data
 		int scaleDown = 8;
-		int firstImage = trainingImages;
-		const int imNum = 115;
-		vector<char> testResponses = getResponses2D(imNum,firstImage,tileSize,imageSize,tileNum);
-		CvBoost boost;
-		boost.load("LBP100_boost100_2D.xml");
-		Mat testData = readMatFromXML("LBP165_1D.xml");
-		//testImages(firstImage,50,scaleDown,tileSize,imageSize,tileNum,boost,testData,testResponses);
+		int firstImage = 100;
+		const int imNum = 165;																		//
+		vector<char> testResponses = getResponses(imNum,firstImage,tileSize,imageSize,tileNum,false,codeType);
+		CvBoost boost;											
+		boost.load("std100_boost100_2D.xml");																//
+		Mat testData = readMatFromXML("std165_2D.xml");											//
+		float b[imNum], c[imNum];
+		evaluateResult(firstImage,100,scaleDown,imNum,tileSize,imageSize,tileNum,boost,testData,testResponses,b,c,strongClassThres);
 
-		float b[imNum], c[imNum]; testForPlot(firstImage,imNum,tileSize,imageSize,tileNum,boost,testData,testResponses,b,c);
 	}
 	return 0;
 
