@@ -8,7 +8,9 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv/ml.h>
 #include "cvplot.h"
+#include "Classes.h"
 
+typedef cv::Mat (*featureFunc) (cv::Mat&);
 
 std::string intToStrIm(int i)
 {
@@ -240,6 +242,47 @@ cv::Mat createDistanceFeatures(int numberOfImages,int firstImage, int tileSize, 
 	return featureMatrix;
 }
 
+cv::Mat createI1DFeatures(int numberOfImages,int firstImage, int tileSize, int imageSize, int tileNum)
+{
+	printf("Calculate i1D structure features....\n\n");
+	int features = 1;
+	cv::Mat featureMatrix = cv::Mat::zeros(numberOfImages*tileNum*tileNum,features, CV_32FC1);
+	float score1D;
+	cv::Mat im, sobxTile, sobyTile, sobx, soby;
+	cv::Mat structureTensor = cv::Mat::zeros(2,2,CV_32FC1);
+	std::vector<float> eigenvalues;
+
+	for(int r = 0 ; r< numberOfImages ; r++)
+	{
+		im = cv::imread(intToStrIm(r+firstImage), CV_LOAD_IMAGE_GRAYSCALE);
+
+		cv::GaussianBlur( im, im, cv::Size(3,3), 0, 0, cv::BORDER_DEFAULT );
+		cv::Sobel( im, sobx, CV_32FC1, 1, 0, 3, 1, 0, cv::BORDER_DEFAULT );
+		cv::Sobel(im, soby, CV_32FC1, 0, 1, 3, 1, 0, cv::BORDER_DEFAULT );
+
+
+		for(int i=0; i<tileNum; i++)
+		{
+			for(int j=0; j<tileNum; j++)
+			{
+				sobxTile = sobx(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
+				sobyTile = soby(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
+
+				structureTensor.at<float>(0,0) = sobxTile.dot(sobxTile);
+				structureTensor.at<float>(0,1) = sobxTile.dot(sobyTile);
+				structureTensor.at<float>(1,0) = sobxTile.dot(sobyTile);
+				structureTensor.at<float>(1,1) = sobyTile.dot(sobyTile);
+				cv::eigen(structureTensor, eigenvalues);
+				score1D = cv::pow((eigenvalues[0]-eigenvalues[1]),2)/(pow(eigenvalues[0],2)+pow(eigenvalues[1],2));
+
+				featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,0) = score1D;
+			}
+		}
+		std::cout << "image " << r+1 << std::endl;
+	}
+	return featureMatrix;
+}
+
 cv::Mat createFastCornerFeatures(int numberOfImages,int firstImage, int tileSize, int imageSize, int tileNum)
 {
 	printf("Calculate FAST corner detection features....\n\n");
@@ -259,16 +302,10 @@ cv::Mat createFastCornerFeatures(int numberOfImages,int firstImage, int tileSize
 			{
 				tile = im(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
 				cv::FAST(tile,keyPoint,10,true);
-				if(keyPoint.size() > 0)
-				std::cout << keyPoint.size() << std::endl;
 				featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,0) = keyPoint.size();
 				cv::FAST(tile,keyPoint,25,true);
-				if(keyPoint.size() > 0)
-				std::cout << keyPoint.size() << std::endl;
 				featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,1) = keyPoint.size();
 				cv::FAST(tile,keyPoint,50,true);
-				if(keyPoint.size() > 0)
-				std::cout << keyPoint.size() << std::endl;
 				featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,2) = keyPoint.size();
 			}
 		}
@@ -309,83 +346,6 @@ cv::Mat createORBFeatures(int numberOfImages,int firstImage, int tileSize, int i
 	return featureMatrix;
 }
 
-std::vector<char> getResponses1D(int numberOfImages,int firstImage,int tileSize,int imageSize,int tileNum, bool training)
-{
-	printf("Calculate 1D responses....\n\n");
-	std::vector<char> responses;
-	cv::Mat groundTruth, groundTruthTile;
-
-	for(int r = 0 ; r< numberOfImages ; r++)
-	{
-		groundTruth = cv::imread(intToStrGroundTruth(r+firstImage), CV_LOAD_IMAGE_GRAYSCALE);
-		for(int i=0; i<tileNum; i++)
-		{
-			for(int j=0; j<tileNum; j++)
-			{
-				groundTruthTile = groundTruth(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
-
-				if(training)
-				{
-					if(cv::sum(groundTruthTile)(0) <= 100*tileSize*tileSize && cv::countNonZero(groundTruthTile) > 0.75*tileSize*tileSize)
-						responses.push_back('T');
-					else
-						responses.push_back('F');
-				}
-				else
-				{
-					if(cv::sum(groundTruthTile)(0) <= 100*tileSize*tileSize && cv::countNonZero(groundTruthTile) > 0.75*tileSize*tileSize)
-						responses.push_back('T');
-					else if(cv::countNonZero(groundTruthTile) == 0)
-						responses.push_back('F');
-					else if(cv::sum(groundTruthTile)(0)/countNonZero(groundTruthTile) > 150)
-						responses.push_back('F');
-					else
-						responses.push_back('I');
-				}
-			}
-		}
-	}
-	return responses;
-}
-
-std::vector<char> getResponses2D(int numberOfImages,int firstImage,int tileSize,int imageSize,int tileNum,bool training)
-{
-	printf("Calculate 2D responses....\n\n");
-	std::vector<char> responses;
-	cv::Mat groundTruth, groundTruthTile;
-
-	for(int r = 0 ; r< numberOfImages ; r++)
-	{
-		groundTruth = cv::imread(intToStrGroundTruth(r+firstImage), CV_LOAD_IMAGE_GRAYSCALE);
-		for(int i=0; i<tileNum; i++)
-		{
-			for(int j=0; j<tileNum; j++)
-			{
-				groundTruthTile = groundTruth(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
-
-				if(training)
-				{
-					if(cv::sum(groundTruthTile)(0) > 150*tileSize*tileSize)
-						responses.push_back('T');
-					else
-						responses.push_back('F');
-				}
-				else
-				{
-					if(cv::sum(groundTruthTile)(0) > 150*tileSize*tileSize)
-						responses.push_back('T');
-					else if(cv::countNonZero(groundTruthTile) == 0)
-						responses.push_back('F');
-					else if(cv::sum(groundTruthTile)(0)/countNonZero(groundTruthTile) < 150)
-						responses.push_back('F');
-					else
-						responses.push_back('I');
-				}
-			}
-		}
-	}
-	return responses;
-}
 
 std::vector<char> getResponses(int numberOfImages,int firstImage,int tileSize,int imageSize,int tileNum,bool training, std::string codeType)
 {
@@ -600,26 +560,49 @@ void visualizeFeature(int image,int imageSize, int tileSize, int tileNum, int fe
 	cv::destroyWindow("Test image");
 }
 
-cv::Mat cascade(int firstImage,int imNum, int tileSize, int imageSize, int tileNum, std::vector<CvBoost*> boost,std::vector<char>& responsesAll,std::vector<char> responses2D,std::vector<double> strongClassThres)
+
+
+cv::Mat calcLBPSample(cv::Mat& tile,int tileSize, int imageSize)
 {
-	cv::Mat im, tile, mean, std;
+	int features = 256;
+	cv::Mat testSample(1,features+1, CV_32FC1);
+	cv::Mat binary = cv::Mat::zeros(tileSize-2,tileSize-2,CV_32FC1);
+	cv::Mat LBPblock, block, bp;
+	cv::MatND hist;
+	int tiles = imageSize/tileSize, channels[] = {0, 1}, histSize[] = {256};
+	float range[] = {0, 256};
+	const float* ranges[] = {range};
+
+	for(int ii=0; ii<tileSize-2; ii++)
+	{
+		for(int jj=0; jj<tileSize-2; jj++)
+		{
+			block = tile(cv::Rect(ii,jj,3,3));
+			cv::compare(block,block.at<uchar>(1,1),LBPblock,cv::CMP_GT);
+			LBPblock.convertTo(bp,CV_32FC1);
+			binary.at<float>(ii,jj) = (bp.at<float>(0,0)+bp.at<float>(1,0)*2+bp.at<float>(2,0)*4+bp.at<float>(2,1)*8+
+				bp.at<float>(2,2)*16+bp.at<float>(1,2)*32+bp.at<float>(0,2)*64+bp.at<float>(0,1)*128)/255;
+		}
+	}
+	calcHist(&binary,1,channels,cv::Mat(),hist,1,histSize,ranges,true,false);
+
+	for(int f=0; f<features; f++)
+		testSample.at<float>(1,f) = hist.at<float>(f);
+
+	return testSample;
+}
+
+cv::Mat cascade(int firstImage,int imNum, int tileSize, int imageSize, int tileNum, std::vector<CvBoost*> boost,std::vector<double> strongClassThres, std::vector<CalcSample*> featureFunctions)
+{
+	double weakSum;
+	cv::Mat im, tile;
 	int features, cascadeStep;
-	std::vector<int> weights;
+	//std::vector<int> weights;
 	std::vector<CvMat*> weakResponses;
-	std::vector<cv::KeyPoint> keyPoint;
-	cv::Mat predictions = cv::Mat::zeros(imNum*tileNum*tileNum,1,IPL_DEPTH_1U);
+	cv::Mat predictions = cv::Mat::zeros(imNum*tileNum*tileNum,1,CV_8UC1);
 
 	for(int i=0; i<boost.size(); i++)
 		weakResponses.push_back(cvCreateMat(1,boost[i]->get_weak_predictors()->total,CV_32FC1));
-
-
-	CvBoost boost2;
-	boost2.load("fast100_boost100_all.xml");
-	CvSeq* weights2 = boost2.get_weak_predictors();
-	int numOfWeights2 = weights2->total;
-	std::cout << numOfWeights2 << std::endl;
-	CvMat* weakResponses2 = cvCreateMat(1,numOfWeights2,CV_32FC1);
-	//CvMat* weakResponses = cvCreateMat(1,numOfWeights,CV_32FC1);
 
 	for(int r=0; r<imNum; r++)
 	{
@@ -635,47 +618,46 @@ cv::Mat cascade(int firstImage,int imNum, int tileSize, int imageSize, int tileN
 
 				//Calculate std
 				cascadeStep = 0;
-				features = 1;
-				cv::Mat testSampleSTD(1,features+1, CV_32FC1 );
-				testSampleSTD.at<float>(0,0) = responsesAll[r*tileNum*tileNum + i*tileNum + j]; 
-				cv::meanStdDev(tile,mean,std);
-				testSampleSTD.at<float>(0,1) = (float)std.at<double>(0,0);
-
-				CvMat testSampleCvMat = testSampleSTD;
+				cv::Mat testSample = featureFunctions[cascadeStep]->operator()(tile);
+				CvMat testSampleCvMat = testSample;
 				boost[cascadeStep]->predict(&testSampleCvMat,(const CvMat*)0, weakResponses[cascadeStep]);
-				double weakSum = cvSum(weakResponses[cascadeStep]).val[0];
-				//std::cout << weakSum << std::endl;
+				weakSum = cvSum(weakResponses[cascadeStep]).val[0];
 
-				//if(weakSum > strongClassThres[cascadeStep])
+				if(weakSum > strongClassThres[cascadeStep])
 				{
-					// Calculate FAST corners
-					
+					//Calculate FAST corners
 					cascadeStep = 1;
-					features = 3;
-					cv::Mat testSampleFAST(1,features+1, CV_32FC1 );
-					testSampleFAST.at<float>(0,0) = responses2D[r*tileNum*tileNum + i*tileNum + j]; 
-
-					cv::FAST(tile,keyPoint,10,true);
-					//if(keyPoint.size() > 0)
-					//std::cout << keyPoint.size() << std::endl;
-					testSampleFAST.at<float>(0,1) = keyPoint.size();
-					cv::FAST(tile,keyPoint,25,true);
-					//if(keyPoint.size() > 0)
-					//std::cout << keyPoint.size() << std::endl;
-					testSampleFAST.at<float>(0,2) = keyPoint.size();
-					cv::FAST(tile,keyPoint,50,true);
-					testSampleFAST.at<float>(0,3) = keyPoint.size();
-					//if(keyPoint.size() > 0)
-					//std::cout << keyPoint.size() << std::endl;
-					CvMat testSampleCvMatFAST = testSampleFAST;
-					/*boost[cascadeStep]->predict(&testSampleCvMatFAST,(const CvMat*)0, weakResponses[cascadeStep]);
-					float weakSum = cvSum(weakResponses[cascadeStep]).val[0];*/
-					boost2.predict(&testSampleCvMatFAST,(const CvMat*)0, weakResponses2);
-					double weakSum2 = cvSum(weakResponses2).val[0];
+					cv::Mat testSample = featureFunctions[cascadeStep]->operator()(tile);
+					CvMat testSampleCvMat = testSample;
+					boost[cascadeStep]->predict(&testSampleCvMat,(const CvMat*)0, weakResponses[cascadeStep]);
+					weakSum = cvSum(weakResponses[cascadeStep]).val[0];
 					
-			
-					if(weakSum2 > strongClassThres[cascadeStep])
-						predictions.at<bool>(r*tileNum*tileNum + i*tileNum + j,0) = true;
+					if(weakSum > strongClassThres[cascadeStep])
+					{
+						//Calculate LBP
+						cascadeStep = 2;
+						cv::Mat testSample = featureFunctions[cascadeStep]->operator()(tile);
+						CvMat testSampleCvMat = testSample;
+						boost[cascadeStep]->predict(&testSampleCvMat,(const CvMat*)0, weakResponses[cascadeStep]);
+						weakSum = cvSum(weakResponses[cascadeStep]).val[0];
+
+						if(weakSum > strongClassThres[cascadeStep])
+							predictions.at<uchar>(r*tileNum*tileNum + i*tileNum + j,0) = 2;
+
+					}
+					else
+					{
+						//Calculate i1D structure
+						cascadeStep = 3;
+						cv::Mat testSample = featureFunctions[cascadeStep]->operator()(tile);
+						CvMat testSampleCvMat = testSample;
+						boost[cascadeStep]->predict(&testSampleCvMat,(const CvMat*)0, weakResponses[cascadeStep]);
+						weakSum = cvSum(weakResponses[cascadeStep]).val[0];
+
+						if(weakSum > strongClassThres[cascadeStep])
+							predictions.at<uchar>(r*tileNum*tileNum + i*tileNum + j,0) = 1;
+
+					}
 				}
 
 			}
@@ -687,12 +669,13 @@ cv::Mat cascade(int firstImage,int imNum, int tileSize, int imageSize, int tileN
 }
 
 
-void evaluateResult2(int firstImage, int k, int scaleDown,int imNum, int tileSize, int imageSize, int tileNum,std::vector<char>& responses, cv::Mat& predictions, float* trueClass, float* falseClass)
+void evaluateCascade(int firstImage, int k, int scaleDown,int imNum, int tileSize, int imageSize, int tileNum,std::vector<char>& responses1D, std::vector<char> responses2D, cv::Mat& predictions, float* trueClass1D, float* falseClass1D, float* trueClass2D, float* falseClass2D)
 {
 
 	int imageCount=0;
 	int imPos = tileSize/scaleDown;
-	double totalTrueReal = 0, totalTrueClass = 0, totalFalseClass = 0;
+	double totalTrueReal1D = 0, totalTrueClass1D = 0, totalFalseClass1D = 0;
+	double totalTrueReal2D = 0, totalTrueClass2D = 0, totalFalseClass2D = 0;
 
 	cv::Mat Im(imageSize,imageSize,16);
 	cv::Mat resizedIm(imageSize/scaleDown,imageSize/scaleDown,16);
@@ -700,9 +683,12 @@ void evaluateResult2(int firstImage, int k, int scaleDown,int imNum, int tileSiz
 
 	for(int r = 0; r<imNum; r++)
 	{
-		trueClass[r] = 0;
-		falseClass[r] = 0;
-		int trueReal = 0;
+		trueClass1D[r] = 0;
+		falseClass1D[r] = 0;
+		trueClass2D[r] = 0;
+		falseClass2D[r] = 0;
+		int trueReal1D = 0;
+		int trueReal2D = 0;
 		cv::Mat im = cv::imread(intToStrIm(firstImage+r));
 
 		if(r >= k && r<scaleDown*scaleDown+k)
@@ -716,27 +702,42 @@ void evaluateResult2(int firstImage, int k, int scaleDown,int imNum, int tileSiz
 
 				if(r >= k && r<scaleDown*scaleDown+k)
 				{
-					if(predictions.at<bool>(vecInx,0) == true && responses[vecInx] != 'F')
+					if(predictions.at<uchar>(vecInx,0) == 2 && responses2D[vecInx] != 'F')
 						rectangle(resizedIm,cvPoint(x*imPos,y*imPos),cvPoint(x*imPos + imPos,y*imPos+imPos),CV_RGB(0,255,0),1,8);
 
-					else if(responses[vecInx] == 'T')
+					else if(predictions.at<uchar>(vecInx,0) == 1 && responses1D[vecInx] != 'F')
+						rectangle(resizedIm,cvPoint(x*imPos,y*imPos),cvPoint(x*imPos + imPos,y*imPos+imPos),CV_RGB(0,0,255),1,8);
+
+					else if(responses2D[vecInx] == 'T' || responses1D[vecInx] == 'T')
 						rectangle(resizedIm,cvPoint(x*imPos,y*imPos),cvPoint(x*imPos + imPos,y*imPos+imPos),CV_RGB(255,0,0),1,8);
 
-					else if(predictions.at<bool>(vecInx,0) == true)
-						rectangle(resizedIm,cvPoint(x*imPos,y*imPos),cvPoint(x*imPos + imPos,y*imPos+imPos),CV_RGB(0,0,255),1,8);
+					else if(predictions.at<uchar>(vecInx,0) == 1)
+						rectangle(resizedIm,cvPoint(x*imPos,y*imPos),cvPoint(x*imPos + imPos,y*imPos+imPos),CV_RGB(255,0,255),1,8);
+
+					else if(predictions.at<uchar>(vecInx,0) == 2)
+						rectangle(resizedIm,cvPoint(x*imPos,y*imPos),cvPoint(x*imPos + imPos,y*imPos+imPos),CV_RGB(0,255,255),1,8);
+
 				}
 
 				//for(int j=0; j<100; j++)
 				//std::cout << cvmGet(weakResponses,0,j) << std::endl << cvSum(weakResponses).val[0] << std::endl;
-				if(responses[vecInx] == 'T')
-					trueReal++;
+				if(responses1D[vecInx] == 'T')
+					trueReal1D++;
 
-				if(predictions.at<bool>(vecInx,0) && responses[vecInx] == 'T')
-					trueClass[r]++;
+				if(predictions.at<uchar>(vecInx,0) == 1 && responses1D[vecInx] == 'T')
+					trueClass1D[r]++;
 
-				if(predictions.at<bool>(vecInx,0) && responses[vecInx] == 'F')
-					falseClass[r]++;
+				if(predictions.at<uchar>(vecInx,0) == 1 && responses1D[vecInx] == 'F')
+					falseClass1D[r]++;
 
+				if(responses2D[vecInx] == 'T')
+					trueReal2D++;
+
+				if(predictions.at<uchar>(vecInx,0) == 2 && responses2D[vecInx] == 'T')
+					trueClass2D[r]++;
+
+				if(predictions.at<uchar>(vecInx,0) == 2 && responses2D[vecInx] == 'F')
+					falseClass2D[r]++;
 
 			}
 		}
@@ -748,25 +749,41 @@ void evaluateResult2(int firstImage, int k, int scaleDown,int imNum, int tileSiz
 		}
 
 
-		totalTrueReal += trueReal;
-		totalTrueClass += trueClass[r];
-		totalFalseClass += falseClass[r];
+		totalTrueReal1D += trueReal1D;
+		totalTrueClass1D += trueClass1D[r];
+		totalFalseClass1D += falseClass1D[r];
 
-		if(trueReal > 0)
-			trueClass[r] = trueClass[r]/trueReal*100;
+		totalTrueReal2D += trueReal2D;
+		totalTrueClass2D += trueClass2D[r];
+		totalFalseClass2D += falseClass2D[r];
+
+		if(trueReal1D > 0)
+			trueClass1D[r] = trueClass1D[r]/trueReal1D*100;
 		else
-			trueClass[r] = -20;
+			trueClass1D[r] = -20;
+
+		if(trueReal2D > 0)
+			trueClass2D[r] = trueClass2D[r]/trueReal2D*100;
+		else
+			trueClass2D[r] = -20;
 
 	}
-	std::cout << "Amount of true tiles detected: " << totalTrueClass/totalTrueReal << std::endl
-		<< "Average false tiles per image: " << totalFalseClass/imNum << std::endl;
+	std::cout << "Amount of true 1D tiles detected: " << totalTrueClass1D/totalTrueReal1D << std::endl
+		<< "Average false 1D tiles per image: " << totalFalseClass1D/imNum << std::endl << std::endl;
+
+	std::cout << "Amount of true 2D tiles detected: " << totalTrueClass2D/totalTrueReal2D << std::endl
+		<< "Average false 2D tiles per image: " << totalFalseClass2D/imNum << std::endl;
 
 	cv::namedWindow("Test images",CV_WINDOW_AUTOSIZE);
 	imshow("Test images", Im);
 
-	PlotManager pm;
-	pm.Plot("Result from testing", trueClass  , imNum, 1,0,0,255);
-	pm.Plot("Result from testing", falseClass  , imNum, 1,255,0,0);
+	PlotManager pm1d;
+	pm1d.Plot("Result from testing", trueClass1D  , imNum, 1,0,0,255);
+	pm1d.Plot("Result from testing", falseClass1D  , imNum, 1,255,0,255);
+
+	PlotManager pm2d;
+	pm2d.Plot("Result from testing", trueClass2D  , imNum, 1,255,0,0);
+	pm2d.Plot("Result from testing", falseClass2D  , imNum, 1,0,255,255);
 
 	cv::waitKey();
 	cv::destroyWindow("Test images");
