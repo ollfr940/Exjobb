@@ -2,6 +2,8 @@
 #include<iostream>
 #include<fstream>
 #include<math.h>
+#include<ctime>
+#include<Windows.h>
 #include <stdlib.h>
 #include <opencv/cv.h>
 #include <opencv2/core/core.hpp>
@@ -131,7 +133,7 @@ cv::Mat createLBPFeatures(int numberOfImages,int firstImage, int tileSize, int i
 				meanStdDev(tile, mean, std);
 
 				if(std.at<double>(0,0) < 20)
-					featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,0) = (tileSize-2)*(tileSize-2);
+					featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,0) = (float)(tileSize-2)*(tileSize-2);
 				else
 				{
 					for(int ii=0; ii<tileSize-2; ii++)
@@ -195,7 +197,7 @@ cv::Mat createStdFeatures(int numberOfImages,int firstImage, int tileSize, int i
 cv::Mat createDistanceFeatures(int numberOfImages,int firstImage, int tileSize, int imageSize, int tileNum,int threshold1,int threshold2)
 {
 	printf("Calculate Distance features....\n\n");
-	int features = 3;
+	int features = 2;
 	cv::Mat featureMatrix = cv::Mat::zeros(numberOfImages*tileNum*tileNum,features, CV_32FC1);
 	int tiles = imageSize/tileSize;
 	float score1D;
@@ -210,10 +212,9 @@ cv::Mat createDistanceFeatures(int numberOfImages,int firstImage, int tileSize, 
 		cv::threshold(canny,canny,128,255, cv::THRESH_BINARY_INV);
 		cv::distanceTransform(canny,distanceMap,CV_DIST_L1,3);
 
-		cv::GaussianBlur( im, im, cv::Size(3,3), 0, 0, cv::BORDER_DEFAULT );
-		cv::Sobel( im, sobx, CV_32FC1, 1, 0, 3, 1, 0, cv::BORDER_DEFAULT );
-		//cv::convertScaleAbs( sobx, gradx);
-		cv::Sobel(im, soby, CV_32FC1, 0, 1, 3, 1, 0, cv::BORDER_DEFAULT );
+		//cv::GaussianBlur( im, im, cv::Size(3,3), 0, 0, cv::BORDER_DEFAULT );
+		//cv::Sobel( im, sobx, CV_32FC1, 1, 0, 3, 1, 0, cv::BORDER_DEFAULT );
+		//cv::Sobel(im, soby, CV_32FC1, 0, 1, 3, 1, 0, cv::BORDER_DEFAULT );
 
 
 		for(int i=0; i<tileNum; i++)
@@ -221,20 +222,20 @@ cv::Mat createDistanceFeatures(int numberOfImages,int firstImage, int tileSize, 
 			for(int j=0; j<tileNum; j++)
 			{
 				distanceTile = distanceMap(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
-				sobxTile = sobx(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
-				sobyTile = soby(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
+				//sobxTile = sobx(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
+				//sobyTile = soby(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
 
-				cv::meanStdDev(distanceTile, mean, std);
+				cv::meanStdDev(distanceTile, mean, std);/*
 				structureTensor.at<float>(0,0) = sobxTile.dot(sobxTile);
 				structureTensor.at<float>(0,1) = sobxTile.dot(sobyTile);
 				structureTensor.at<float>(1,0) = sobxTile.dot(sobyTile);
 				structureTensor.at<float>(1,1) = sobyTile.dot(sobyTile);
 				cv::eigen(structureTensor, eigenvalues);
-				score1D = cv::pow((eigenvalues[0]-eigenvalues[1]),2)/(pow(eigenvalues[0],2)+pow(eigenvalues[1],2));
+				score1D = cv::pow((eigenvalues[0]-eigenvalues[1]),2)/(pow(eigenvalues[0],2)+pow(eigenvalues[1],2));*/
 
-				featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,0) = mean.at<double>(0,0);
-				featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,1) = std.at<double>(0,0);
-				featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,2) = score1D;
+				featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,0) = (float)mean.at<double>(0,0);
+				featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,1) = (float)std.at<double>(0,0);
+				//featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,2) = score1D;
 			}
 		}
 		std::cout << "image " << r+1 << std::endl;
@@ -268,10 +269,10 @@ cv::Mat createI1DFeatures(int numberOfImages,int firstImage, int tileSize, int i
 				sobxTile = sobx(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
 				sobyTile = soby(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
 
-				structureTensor.at<float>(0,0) = sobxTile.dot(sobxTile);
-				structureTensor.at<float>(0,1) = sobxTile.dot(sobyTile);
-				structureTensor.at<float>(1,0) = sobxTile.dot(sobyTile);
-				structureTensor.at<float>(1,1) = sobyTile.dot(sobyTile);
+				structureTensor.at<float>(0,0) = (float)sobxTile.dot(sobxTile);
+				structureTensor.at<float>(0,1) = (float)sobxTile.dot(sobyTile);
+				structureTensor.at<float>(1,0) = (float)sobxTile.dot(sobyTile);
+				structureTensor.at<float>(1,1) = (float)sobyTile.dot(sobyTile);
 				cv::eigen(structureTensor, eigenvalues);
 				score1D = cv::pow((eigenvalues[0]-eigenvalues[1]),2)/(pow(eigenvalues[0],2)+pow(eigenvalues[1],2));
 
@@ -302,11 +303,11 @@ cv::Mat createFastCornerFeatures(int numberOfImages,int firstImage, int tileSize
 			{
 				tile = im(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
 				cv::FAST(tile,keyPoint,10,true);
-				featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,0) = keyPoint.size();
+				featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,0) = (float)keyPoint.size();
 				cv::FAST(tile,keyPoint,25,true);
-				featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,1) = keyPoint.size();
+				featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,1) = (float)keyPoint.size();
 				cv::FAST(tile,keyPoint,50,true);
-				featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,2) = keyPoint.size();
+				featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,2) = (float)keyPoint.size();
 			}
 		}
 		std::cout << "image " << r+1 << std::endl;
@@ -362,6 +363,10 @@ std::vector<char> getResponses(int numberOfImages,int firstImage,int tileSize,in
 	for(int r = 0 ; r< numberOfImages ; r++)
 	{
 		groundTruth = cv::imread(intToStrGroundTruth(r+firstImage), CV_LOAD_IMAGE_GRAYSCALE);
+
+		if(!groundTruth.data)
+			std::cout << "error" << std::endl;
+
 		for(int i=0; i<tileNum; i++)
 		{
 			for(int j=0; j<tileNum; j++)
@@ -478,7 +483,7 @@ void evaluateResult(int firstImage,int k, int scaleDown,int imNum, int tileSize,
 			{
 				CvMat testSampleCvMat = testSample;
 				boost.predict(&testSampleCvMat,(const CvMat*)0, weakResponses);
-				float weakSum = cvSum(weakResponses).val[0];
+				float weakSum = (float)cvSum(weakResponses).val[0];
 				//std::cout << weakSum << std::endl;
 				if(weakSum > strongClassThres)
 					response = 2;
@@ -592,21 +597,23 @@ cv::Mat calcLBPSample(cv::Mat& tile,int tileSize, int imageSize)
 	return testSample;
 }
 
-cv::Mat cascade(int firstImage,int imNum, int tileSize, int imageSize, int tileNum, std::vector<CvBoost*> boost,std::vector<double> strongClassThres, std::vector<CalcSample*> featureFunctions)
+cv::Mat cascade(int firstImage,int imNum, int tileSize, int imageSize, int tileNum, std::vector<CvBoost*> boost,std::vector<float> strongClassThres, std::vector<CalcSample*> featureFunctions)
 {
 	double weakSum;
+	DWORD start, stop;
 	cv::Mat im, tile;
-	int features, cascadeStep;
-	//std::vector<int> weights;
+	int cascadeStep;
 	std::vector<CvMat*> weakResponses;
 	cv::Mat predictions = cv::Mat::zeros(imNum*tileNum*tileNum,1,CV_8UC1);
 
 	for(int i=0; i<boost.size(); i++)
 		weakResponses.push_back(cvCreateMat(1,boost[i]->get_weak_predictors()->total,CV_32FC1));
 
+	start = GetTickCount();
+
 	for(int r=0; r<imNum; r++)
 	{
-
+	
 		im = cv::imread(intToStrIm(firstImage+r), CV_LOAD_IMAGE_GRAYSCALE);
 
 		for( int i=0; i<tileNum; i++ )
@@ -614,7 +621,6 @@ cv::Mat cascade(int firstImage,int imNum, int tileSize, int imageSize, int tileN
 			for(int j=0; j<tileNum; j++)
 			{
 				tile = im(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
-
 
 				//Calculate std
 				cascadeStep = 0;
@@ -655,8 +661,17 @@ cv::Mat cascade(int firstImage,int imNum, int tileSize, int imageSize, int tileN
 						weakSum = cvSum(weakResponses[cascadeStep]).val[0];
 
 						if(weakSum > strongClassThres[cascadeStep])
-							predictions.at<uchar>(r*tileNum*tileNum + i*tileNum + j,0) = 1;
+						{
+							//Calculate distance
+							cascadeStep = 4;
+							cv::Mat testSample = featureFunctions[cascadeStep]->operator()(tile);
+							CvMat testSampleCvMat = testSample;
+							boost[cascadeStep]->predict(&testSampleCvMat,(const CvMat*)0, weakResponses[cascadeStep]);
+							weakSum = cvSum(weakResponses[cascadeStep]).val[0];
 
+							if(weakSum > strongClassThres[cascadeStep])
+								predictions.at<uchar>(r*tileNum*tileNum + i*tileNum + j,0) = 1;
+						}
 					}
 				}
 
@@ -664,6 +679,8 @@ cv::Mat cascade(int firstImage,int imNum, int tileSize, int imageSize, int tileN
 		}
 		std::cout << "image " << r+1 << std::endl;
 	}
+	stop = GetTickCount();
+	std::cout << "Average time per image: " << (float)(stop - start)/((float)imNum)/1000 << std::endl << std::endl; 
 
 	return predictions;
 }
@@ -703,19 +720,19 @@ void evaluateCascade(int firstImage, int k, int scaleDown,int imNum, int tileSiz
 				if(r >= k && r<scaleDown*scaleDown+k)
 				{
 					if(predictions.at<uchar>(vecInx,0) == 2 && responses2D[vecInx] != 'F')
-						rectangle(resizedIm,cvPoint(x*imPos,y*imPos),cvPoint(x*imPos + imPos,y*imPos+imPos),CV_RGB(0,255,0),1,8);
+						rectangle(resizedIm,cvPoint(x*imPos,y*imPos),cvPoint(x*imPos + imPos,y*imPos+imPos),CV_RGB(0,255,0),1,8); //Green
 
 					else if(predictions.at<uchar>(vecInx,0) == 1 && responses1D[vecInx] != 'F')
-						rectangle(resizedIm,cvPoint(x*imPos,y*imPos),cvPoint(x*imPos + imPos,y*imPos+imPos),CV_RGB(0,0,255),1,8);
+						rectangle(resizedIm,cvPoint(x*imPos,y*imPos),cvPoint(x*imPos + imPos,y*imPos+imPos),CV_RGB(0,0,255),1,8); //Blue
 
 					else if(responses2D[vecInx] == 'T' || responses1D[vecInx] == 'T')
-						rectangle(resizedIm,cvPoint(x*imPos,y*imPos),cvPoint(x*imPos + imPos,y*imPos+imPos),CV_RGB(255,0,0),1,8);
+						rectangle(resizedIm,cvPoint(x*imPos,y*imPos),cvPoint(x*imPos + imPos,y*imPos+imPos),CV_RGB(255,0,0),1,8); //Red
 
 					else if(predictions.at<uchar>(vecInx,0) == 1)
-						rectangle(resizedIm,cvPoint(x*imPos,y*imPos),cvPoint(x*imPos + imPos,y*imPos+imPos),CV_RGB(255,0,255),1,8);
+						rectangle(resizedIm,cvPoint(x*imPos,y*imPos),cvPoint(x*imPos + imPos,y*imPos+imPos),CV_RGB(0,255,255),1,8); //turquoise
 
 					else if(predictions.at<uchar>(vecInx,0) == 2)
-						rectangle(resizedIm,cvPoint(x*imPos,y*imPos),cvPoint(x*imPos + imPos,y*imPos+imPos),CV_RGB(0,255,255),1,8);
+						rectangle(resizedIm,cvPoint(x*imPos,y*imPos),cvPoint(x*imPos + imPos,y*imPos+imPos),CV_RGB(255,255,0),1,8); //yellow
 
 				}
 
@@ -778,12 +795,12 @@ void evaluateCascade(int firstImage, int k, int scaleDown,int imNum, int tileSiz
 	imshow("Test images", Im);
 
 	PlotManager pm1d;
-	pm1d.Plot("Result from testing", trueClass1D  , imNum, 1,0,0,255);
-	pm1d.Plot("Result from testing", falseClass1D  , imNum, 1,255,0,255);
+	pm1d.Plot("Result 1D-code", trueClass1D  , imNum, 1,0,0,255);	//Blue
+	pm1d.Plot("Result 1D-code", falseClass1D  , imNum, 1,0,255,255);//turquoise
 
 	PlotManager pm2d;
-	pm2d.Plot("Result from testing", trueClass2D  , imNum, 1,255,0,0);
-	pm2d.Plot("Result from testing", falseClass2D  , imNum, 1,0,255,255);
+	pm2d.Plot("Result 2D-codes", trueClass2D  , imNum, 1,0,255,0);		//Green
+	pm2d.Plot("Result 2D-codes", falseClass2D  , imNum, 1,255,255,0);	//Yellow
 
 	cv::waitKey();
 	cv::destroyWindow("Test images");

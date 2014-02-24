@@ -41,11 +41,11 @@ public:
 	{
 		testSample.at<float>(0,0) = 'T';
 		cv::FAST(tile,keyPoint,10,true);
-		testSample.at<float>(0,1) = keyPoint.size();
+		testSample.at<float>(0,1) = (float)keyPoint.size();
 		cv::FAST(tile,keyPoint,25,true);
-		testSample.at<float>(0,2) = keyPoint.size();
+		testSample.at<float>(0,2) = (float)keyPoint.size();
 		cv::FAST(tile,keyPoint,50,true);
-		testSample.at<float>(0,3) = keyPoint.size();
+		testSample.at<float>(0,3) = (float)keyPoint.size();
 
 		return testSample;
 	}
@@ -108,10 +108,10 @@ public:
 		cv::Sobel( gaussianTile, sobxTile, CV_32FC1, 1, 0, 3, 1, 0, cv::BORDER_DEFAULT );
 		cv::Sobel(gaussianTile, sobyTile, CV_32FC1, 0, 1, 3, 1, 0, cv::BORDER_DEFAULT );
 
-		structureTensor.at<float>(0,0) = sobxTile.dot(sobxTile);
-		structureTensor.at<float>(0,1) = sobxTile.dot(sobyTile);
-		structureTensor.at<float>(1,0) = sobxTile.dot(sobyTile);
-		structureTensor.at<float>(1,1) = sobyTile.dot(sobyTile);
+		structureTensor.at<float>(0,0) = (float)sobxTile.dot(sobxTile);
+		structureTensor.at<float>(0,1) = (float)sobxTile.dot(sobyTile);
+		structureTensor.at<float>(1,0) = (float)sobxTile.dot(sobyTile);
+		structureTensor.at<float>(1,1) = (float)sobyTile.dot(sobyTile);
 		cv::eigen(structureTensor, eigenvalues);
 		score1D = cv::pow((eigenvalues[0]-eigenvalues[1]),2)/(pow(eigenvalues[0],2)+pow(eigenvalues[1],2));
 		testSample.at<float>(0,1) = score1D;
@@ -122,5 +122,29 @@ public:
 	cv::Mat gaussianTile, sobxTile, sobyTile, structureTensor;
 	float score1D;
 	std::vector<float> eigenvalues;
+};
+
+class CalcDistSample : public CalcSample
+{
+public:
+	CalcDistSample(int f,cv::Mat t, int t1, int t2) : CalcSample(f,t)
+	{
+		threshold1 = t1;
+		threshold2 = t2;
+	}
+	cv::Mat operator() (cv::Mat& tile)
+	{
+		cv::Canny(tile,canny,threshold1,threshold2);
+		cv::threshold(canny,canny,128,255, cv::THRESH_BINARY_INV);
+		cv::distanceTransform(canny,distanceTile,CV_DIST_L1,3);
+		cv::meanStdDev(distanceTile, mean, std);
+		testSample.at<float>(0,1) = (float)mean.at<double>(0,0);
+		testSample.at<float>(0,2) = (float)std.at<double>(0,0);
+
+		return testSample;
+	}
+
+	cv::Mat distanceTile, canny, mean, std;
+	int threshold1, threshold2;
 };
 #endif
