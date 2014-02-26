@@ -18,16 +18,17 @@ int _tmain(int argc, _TCHAR* argv[])
 	int images = 100;
 	int trainingImages = 100;
 	int tileSize = 32;
-	string codeType = "1D";
+	string codeType = "all";
 	int imageSize = 2048;
-	int tileNum = imageSize/tileSize;
+	int overlap = 1;
+	int tileNum = imageSize/tileSize*overlap - (overlap-1);
 	
-	float thresholdStd = -1;
+	float thresholdStd = -4.5;
 	float thresholdFAST = -1.5;
 	float thresholdLBP = -2;
 	float thresholdI1D = -1.5;
 	float thresholdDist = -1.5;
-	float strongClassThres = thresholdI1D;
+	float strongClassThres = thresholdStd;
 
 	//For testing
 	int scaleDown = 8;
@@ -36,19 +37,23 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	if(training)
 	{		
-		vector<char> trainingResponses = getResponses(images,0,tileSize,imageSize,tileNum,true,codeType);
+		vector<char> trainingResponses = getResponses(images,0,tileSize,imageSize,tileNum,overlap,true,codeType);
 
+		CalcSample* featureFunc = new CalcSTDSample(1,cv::Mat(1,1,CV_32FC1),false);
+		//CalcSample* featureFunc = new CalcI1DSample(1,cv::Mat(1,1,CV_32FC1));
+		//CalcSample* featureFunc = new CalcDistSample(3,cv::Mat(1,3,CV_32FC1),false);
+		Mat trainingData = createFeatures(images,0,tileSize,imageSize,tileNum,overlap,featureFunc);
 		//Mat trainingData = createStdFeatures(images,0,tileSize,imageSize,tileNum);					//
 		//Mat trainingData = createLBPFeatures(images,0,tileSize,imageSize,tileNum);
-		Mat trainingData = createDistanceFeatures(images,0,tileSize,imageSize,tileNum,100,300);
+		//Mat trainingData = createDistanceFeatures(images,0,tileSize,imageSize,tileNum,100,300);
 		//Mat trainingData = createFastCornerFeatures(images,0,tileSize,imageSize,tileNum);
 		//Mat trainingData = createBRISKFeatures(images,0,tileSize,imageSize,tileNum);
 		//Mat trainingData = createI1DFeatures(images,0,tileSize,imageSize,tileNum);
 		//visualizeFeature(0,imageSize,tileSize,tileNum,0,trainingData);
-		writeMatToFile(trainingData,trainingResponses,"dist100_1D.txt");							//
+		writeMatToFile(trainingData,trainingResponses,"std100_all.txt");							//
 
 		CvMLData cvml;
-		cvml.read_csv("dist100_1D.txt");															//
+		cvml.read_csv("std100_all.txt");															//
 		cvml.set_response_idx(0);
 		CvTrainTestSplit cvtts(trainingImages*tileNum*tileNum, true);
 		cvml.set_train_test_split(&cvtts);
@@ -66,34 +71,34 @@ int _tmain(int argc, _TCHAR* argv[])
 		cout << "Train error: " <<fl1 << endl 
 			<< "Test error: " << fl2 << endl << endl;
 
-		boost.save("./dist100_boost100_1D.xml", "boost");											//
+		boost.save("./std100_boost100_all.xml", "boost");											//
 
 
 		int scaleDown = 8;
 		int firstImage = trainingImages;
 		const int imNum = 165;																		//
 
-		vector<char> testResponses = getResponses(imNum,firstImage,tileSize,imageSize,tileNum,false,codeType);
+		vector<char> testResponses = getResponses(imNum,firstImage,tileSize,imageSize,tileNum,overlap,false,codeType);
 		printf("Calculate features for testing:\n\n");
-		Mat testData = createDistanceFeatures(imNum,firstImage,tileSize,imageSize,tileNum,100,300);	//
-		//Mat testData = createLBPFeatures(imNum,firstImage,tileSize,imageSize,tileNum);
+		Mat testData = createFeatures(imNum,firstImage,tileSize,imageSize,tileNum,overlap,featureFunc);	//
+		//Mat testData = createI1DFeatures(imNum,firstImage,tileSize,imageSize,tileNum);
 
-		writeMatToXML(testData,"dist165_1D.xml");													//
+		writeMatToXML(testData,"std165_all.xml");													//
 		float b[imNum], c[imNum];
-		evaluateResult(firstImage,20,scaleDown,imNum,tileSize,imageSize,tileNum,boost,testData,testResponses,b,c,strongClassThres);
+		evaluateResult(firstImage,20,scaleDown,imNum,tileSize,imageSize,tileNum,overlap,boost,testData,testResponses,b,c,strongClassThres);
 	}
 	else if(cascadeTesting)
 	{
-		vector<char> testResponses1D = getResponses(imNum,firstImage,tileSize,imageSize,tileNum,false,"1D");
-		vector<char> testResponses2D = getResponses(imNum,firstImage,tileSize,imageSize,tileNum,false,"2D");
+		vector<char> testResponses1D = getResponses(imNum,firstImage,tileSize,imageSize,tileNum,overlap,false,"1D");
+		vector<char> testResponses2D = getResponses(imNum,firstImage,tileSize,imageSize,tileNum,overlap,false,"2D");
 		vector<CvBoost*> boost;
 		vector<float> strongClassVector;
 		vector<CalcSample*> featureFuncs;
-		featureFuncs.push_back(new CalcSTDSample(1,cv::Mat(1,2,CV_32FC1)));
-		featureFuncs.push_back(new CalcFASTSample(3,cv::Mat(1,4,CV_32FC1)));
-		featureFuncs.push_back(new CalcLBPSample(256,cv::Mat(1,257,CV_32FC1),cv::Mat::zeros(tileSize-2,tileSize-2,CV_32FC1),tileSize));
-		featureFuncs.push_back(new CalcI1DSample(1,cv::Mat(1,2,CV_32FC1)));
-		featureFuncs.push_back(new CalcDistSample(2,cv::Mat(1,3,CV_32FC1),100,300));
+		featureFuncs.push_back(new CalcSTDSample(1,cv::Mat(1,2,CV_32FC1),true));
+		featureFuncs.push_back(new CalcFASTSample(3,cv::Mat(1,4,CV_32FC1),true));
+		featureFuncs.push_back(new CalcLBPSample(256,cv::Mat(1,257,CV_32FC1),true,cv::Mat::zeros(tileSize-2,tileSize-2,CV_32FC1),tileSize));
+		featureFuncs.push_back(new CalcI1DSample(1,cv::Mat(1,2,CV_32FC1),true));
+		featureFuncs.push_back(new CalcDistSample(2,cv::Mat(1,3,CV_32FC1),true));
 
 		CvBoost boost1;
 		CvBoost boost2;
@@ -116,19 +121,19 @@ int _tmain(int argc, _TCHAR* argv[])
 		strongClassVector.push_back(thresholdI1D);
 		strongClassVector.push_back(thresholdDist);
 
-		Mat predictions = cascade(firstImage,imNum,tileSize,imageSize,tileNum,boost,strongClassVector,featureFuncs);
+		vector<Mat*> predictions = cascade(firstImage,imNum,tileSize,imageSize,tileNum,overlap,boost,strongClassVector,featureFuncs);
 		float b[imNum], c[imNum], d[imNum], e[imNum];
-		evaluateCascade(firstImage,20,scaleDown,imNum,tileSize,imageSize,tileNum,testResponses1D,testResponses2D,predictions,b,c,d,e);
+		evaluateCascade(firstImage,20,scaleDown,imNum,tileSize,imageSize,tileNum,overlap,testResponses1D,testResponses2D,predictions,b,c,d,e);
 	}
 	else
 	{
 		//Test with saved data																		
-		vector<char> testResponses = getResponses(imNum,firstImage,tileSize,imageSize,tileNum,false,codeType);
+		vector<char> testResponses = getResponses(imNum,firstImage,tileSize,imageSize,tileNum,overlap,false,codeType);
 		CvBoost boost;											
-		boost.load("dist100_boost100_1D.xml");																//
-		Mat testData = readMatFromXML("dist165_1d.xml");											//
+		boost.load("std100_boost100_all.xml");																//
+		Mat testData = readMatFromXML("std165_all.xml");											//
 		float b[imNum], c[imNum];
-		evaluateResult(firstImage,20,scaleDown,imNum,tileSize,imageSize,tileNum,boost,testData,testResponses,b,c,strongClassThres);
+		evaluateResult(firstImage,20,scaleDown,imNum,tileSize,imageSize,tileNum,overlap,boost,testData,testResponses,b,c,strongClassThres);
 
 	}
 	return 0;
