@@ -100,95 +100,9 @@ void removeFalseClass(cv::Mat* pred, int kernelSize, int removeNum)
 	}
 }
 
-/*
-cv::Mat createLBPFeatures(int numberOfImages,int firstImage, int tileSize, int imageSize, int tileNum)
-{
-	printf("Calculate LBP features....\n\n");
-	int features = 256;
-	cv::Mat featureMatrix = cv::Mat::zeros(numberOfImages*tileNum*tileNum,features, CV_32FC1);
-	cv::Mat binary = cv::Mat::zeros(tileSize-2,tileSize-2,CV_32FC1);
-	int tiles = imageSize/tileSize, channels[] = {0, 1}, histSize[] = {256};
-	float range[] = {0, 256};
-	const float* ranges[] = {range};
-	cv::Mat im, tile, mean, std, block, LBPblock, bp;
-	cv::MatND hist;
-
-	for(int r = 0 ; r< numberOfImages ; r++)
-	{
-		im = cv::imread(intToStrIm(r+firstImage), CV_LOAD_IMAGE_GRAYSCALE);
-
-		for(int i=0; i<tileNum; i++)
-		{
-			for(int j=0; j<tileNum; j++)
-			{
-				tile = im(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
-				meanStdDev(tile, mean, std);
-
-				if(std.at<double>(0,0) < 20)
-					featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,0) = (float)(tileSize-2)*(tileSize-2);
-				else
-				{
-					for(int ii=0; ii<tileSize-2; ii++)
-					{
-						for(int jj=0; jj<tileSize-2; jj++)
-						{
-							block = tile(cv::Rect(ii,jj,3,3));
-							cv::compare(block,block.at<uchar>(1,1),LBPblock,cv::CMP_GT);
-							LBPblock.convertTo(bp,CV_32FC1);
-							binary.at<float>(ii,jj) = (bp.at<float>(0,0)+bp.at<float>(1,0)*2+bp.at<float>(2,0)*4+bp.at<float>(2,1)*8+
-								bp.at<float>(2,2)*16+bp.at<float>(1,2)*32+bp.at<float>(0,2)*64+bp.at<float>(0,1)*128)/255;
-
-
-						}
-					}
-					calcHist(&binary,1,channels,cv::Mat(),hist,1,histSize,ranges,true,false);
-
-					for(int f=0; f<features; f++)
-						featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,f) = hist.at<float>(f);
-				}
-			}
-		}
-		std::cout << "image " << r+1 << std::endl;
-	}
-	return featureMatrix;
-}
-
-cv::Mat createStdFeatures(int numberOfImages,int firstImage, int tileSize, int imageSize, int tileNum)
-{
-	printf("Calculate Std features....\n\n");
-	int features = 1;
-	cv::Mat featureMatrix = cv::Mat::zeros(numberOfImages*tileNum*tileNum,features, CV_32FC1);
-	int tiles = imageSize/tileSize;
-	cv::Mat im, tile, mean, std;//, harris, harrisNorm, tileharris, eigenVV;
-
-	for(int r = 0 ; r< numberOfImages ; r++)
-	{
-		im = cv::imread(intToStrIm(r+firstImage), CV_LOAD_IMAGE_GRAYSCALE);
-		//cv::cornerHarris(im,harris,2,3,0.05,cv::BORDER_DEFAULT );
-		//normalize(harris, harrisNorm, 0, 255, NORM_MINMAX, CV_32FC1, Mat());
-		//cv::cornerEigenValsAndVecs(im,eigenVV,tileSize,3,BORDER_DEFAULT);
-
-		for(int i=0; i<tileNum; i++)
-		{
-			for(int j=0; j<tileNum; j++)
-			{
-				tile = im(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
-				//tileharris = harris(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
-
-				cv::meanStdDev(tile, mean, std);
-				featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,0) = (float)std.at<double>(0,0);
-				//featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,1) = cv::sum(tileharris)(0);
-
-			}
-		}
-		std::cout << "image " << r+1 << std::endl;
-	}
-	return featureMatrix;
-}
-*/
 cv::Mat createFeatures(int numberOfImages,int firstImage, int tileSize, int imageSize, int tileNum, int overlap, CalcSample* featureFunc)
 {
-	printf("Calculate Std features....\n\n");
+	std::cout << "Calculate " << featureFunc->name << " features...." << std::endl << std::endl;
 	int features = featureFunc->features, posOverlap = tileSize/overlap;
 	cv::Mat featureMatrix = cv::Mat::zeros(numberOfImages*tileNum*tileNum,features, CV_32FC1);
 	cv::Mat featureTile = cv::Mat::zeros(1,features,CV_32FC1);
@@ -239,128 +153,8 @@ cv::Mat createFeatures(int numberOfImages,int firstImage, int tileSize, int imag
 	}
 	return featureMatrix;
 }
+
 /*
-cv::Mat createDistanceFeatures(int numberOfImages,int firstImage, int tileSize, int imageSize, int tileNum,int threshold1,int threshold2)
-{
-	printf("Calculate Distance features....\n\n");
-	int features = 2;
-	cv::Mat featureMatrix = cv::Mat::zeros(numberOfImages*tileNum*tileNum,features, CV_32FC1);
-	int tiles = imageSize/tileSize;
-	float score1D;
-	cv::Mat im, distanceTile, sobxTile, sobyTile , canny, canny2, distanceMap, mean, std, sobx, soby;
-	cv::Mat structureTensor = cv::Mat::zeros(2,2,CV_32FC1);
-	std::vector<float> eigenvalues;
-
-	for(int r = 0 ; r< numberOfImages ; r++)
-	{
-		im = cv::imread(intToStrIm(r+firstImage), CV_LOAD_IMAGE_GRAYSCALE);
-		cv::Canny(im,canny,threshold1,threshold2);
-		cv::threshold(canny,canny,128,255, cv::THRESH_BINARY_INV);
-		cv::distanceTransform(canny,distanceMap,CV_DIST_L1,3);
-
-		//cv::GaussianBlur( im, im, cv::Size(3,3), 0, 0, cv::BORDER_DEFAULT );
-		//cv::Sobel( im, sobx, CV_32FC1, 1, 0, 3, 1, 0, cv::BORDER_DEFAULT );
-		//cv::Sobel(im, soby, CV_32FC1, 0, 1, 3, 1, 0, cv::BORDER_DEFAULT );
-
-
-		for(int i=0; i<tileNum; i++)
-		{
-			for(int j=0; j<tileNum; j++)
-			{
-				distanceTile = distanceMap(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
-				//sobxTile = sobx(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
-				//sobyTile = soby(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
-
-				cv::meanStdDev(distanceTile, mean, std);/*
-														structureTensor.at<float>(0,0) = sobxTile.dot(sobxTile);
-														structureTensor.at<float>(0,1) = sobxTile.dot(sobyTile);
-														structureTensor.at<float>(1,0) = sobxTile.dot(sobyTile);
-														structureTensor.at<float>(1,1) = sobyTile.dot(sobyTile);
-														cv::eigen(structureTensor, eigenvalues);
-														score1D = cv::pow((eigenvalues[0]-eigenvalues[1]),2)/(pow(eigenvalues[0],2)+pow(eigenvalues[1],2));
-
-				featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,0) = (float)mean.at<double>(0,0);
-				featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,1) = (float)std.at<double>(0,0);
-				//featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,2) = score1D;
-			}
-		}
-		std::cout << "image " << r+1 << std::endl;
-	}
-	return featureMatrix;
-}
-
-cv::Mat createI1DFeatures(int numberOfImages,int firstImage, int tileSize, int imageSize, int tileNum)
-{
-	printf("Calculate i1D structure features....\n\n");
-	int features = 1;
-	cv::Mat featureMatrix = cv::Mat::zeros(numberOfImages*tileNum*tileNum,features, CV_32FC1);
-	float score1D;
-	cv::Mat im, sobxTile, sobyTile, sobx, soby;
-	cv::Mat structureTensor = cv::Mat::zeros(2,2,CV_32FC1);
-	std::vector<float> eigenvalues;
-
-	for(int r = 0 ; r< numberOfImages ; r++)
-	{
-		im = cv::imread(intToStrIm(r+firstImage), CV_LOAD_IMAGE_GRAYSCALE);
-
-		cv::GaussianBlur( im, im, cv::Size(3,3), 0, 0, cv::BORDER_DEFAULT );
-		cv::Sobel( im, sobx, CV_32FC1, 1, 0, 3, 1, 0, cv::BORDER_DEFAULT );
-		cv::Sobel(im, soby, CV_32FC1, 0, 1, 3, 1, 0, cv::BORDER_DEFAULT );
-
-
-		for(int i=0; i<tileNum; i++)
-		{
-			for(int j=0; j<tileNum; j++)
-			{
-				sobxTile = sobx(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
-				sobyTile = soby(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
-
-				structureTensor.at<float>(0,0) = (float)sobxTile.dot(sobxTile);
-				structureTensor.at<float>(0,1) = (float)sobxTile.dot(sobyTile);
-				structureTensor.at<float>(1,0) = (float)sobxTile.dot(sobyTile);
-				structureTensor.at<float>(1,1) = (float)sobyTile.dot(sobyTile);
-				cv::eigen(structureTensor, eigenvalues);
-				score1D = cv::pow((eigenvalues[0]-eigenvalues[1]),2)/(pow(eigenvalues[0],2)+pow(eigenvalues[1],2));
-
-				featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,0) = score1D;
-			}
-		}
-		std::cout << "image " << r+1 << std::endl;
-	}
-	return featureMatrix;
-}
-
-cv::Mat createFastCornerFeatures(int numberOfImages,int firstImage, int tileSize, int imageSize, int tileNum)
-{
-	printf("Calculate FAST corner detection features....\n\n");
-	int features = 3;
-	cv::Mat featureMatrix = cv::Mat::zeros(numberOfImages*tileNum*tileNum,features, CV_32FC1);
-	int tiles = imageSize/tileSize;
-	cv::Mat im, tile;
-	std::vector<cv::KeyPoint> keyPoint;
-
-	for(int r = 0 ; r< numberOfImages ; r++)
-	{
-		im = cv::imread(intToStrIm(r+firstImage), CV_LOAD_IMAGE_GRAYSCALE);
-
-		for(int i=0; i<tileNum; i++)
-		{
-			for(int j=0; j<tileNum; j++)
-			{
-				tile = im(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
-				cv::FAST(tile,keyPoint,10,true);
-				featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,0) = (float)keyPoint.size();
-				cv::FAST(tile,keyPoint,25,true);
-				featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,1) = (float)keyPoint.size();
-				cv::FAST(tile,keyPoint,50,true);
-				featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,2) = (float)keyPoint.size();
-			}
-		}
-		std::cout << "image " << r+1 << std::endl;
-	}
-	return featureMatrix;
-}
-
 cv::Mat createORBFeatures(int numberOfImages,int firstImage, int tileSize, int imageSize, int tileNum)
 {
 	printf("Calculate FAST corner detection features....\n\n");
@@ -518,7 +312,7 @@ void evaluateResult(int firstImage,int k, int scaleDown,int imNum, int tileSize,
 
 		for( int y = 0; y < tileNum*tileNum; y++ )
 		{
-			testSample.at<float>(0,0) = responses[y+i*tileNum*tileNum];
+			//testSample.at<float>(0,0) = responses[y+i*tileNum*tileNum];
 			for(int x=1; x < features+1; x++)
 			{
 
@@ -649,7 +443,7 @@ std::vector<cv::Mat*> cascade(int firstImage,int imNum, int tileSize, int imageS
 
 				if(weakSum > strongClassThres[cascadeStep])
 				{
-					//Calculate FAST corners
+					//Calculate i1D corners
 					cascadeStep = 1;
 					cv::Mat testSample = featureFunctions[cascadeStep]->operator()(tile);
 					CvMat testSampleCvMat = testSample;
@@ -658,7 +452,7 @@ std::vector<cv::Mat*> cascade(int firstImage,int imNum, int tileSize, int imageS
 
 					if(weakSum > strongClassThres[cascadeStep])
 					{
-						//Calculate LBP
+						//Calculate distance
 						cascadeStep = 2;
 						cv::Mat testSample = featureFunctions[cascadeStep]->operator()(tile);
 						CvMat testSampleCvMat = testSample;
@@ -666,13 +460,12 @@ std::vector<cv::Mat*> cascade(int firstImage,int imNum, int tileSize, int imageS
 						weakSum = cvSum(weakResponses[cascadeStep]).val[0];
 
 						if(weakSum > strongClassThres[cascadeStep])
-							predictions2dIm->at<uchar>(i,j) = 1;
-							//predictions.at<uchar>(r*tileNum*tileNum + i*tileNum + j,0) = 2;
+							predictions1dIm->at<uchar>(i,j) = 1;
 
 					}
 					else
 					{
-						//Calculate i1D structure
+						//Calculate FAST structure
 						cascadeStep = 3;
 				
 						cv::Mat testSample = featureFunctions[cascadeStep]->operator()(tile);
@@ -682,7 +475,7 @@ std::vector<cv::Mat*> cascade(int firstImage,int imNum, int tileSize, int imageS
 
 						if(weakSum > strongClassThres[cascadeStep])
 						{
-							//Calculate distance
+							//Calculate LBP
 							cascadeStep = 4;
 
 							cv::Mat testSample = featureFunctions[cascadeStep]->operator()(tile);
@@ -690,9 +483,9 @@ std::vector<cv::Mat*> cascade(int firstImage,int imNum, int tileSize, int imageS
 							boost[cascadeStep]->predict(&testSampleCvMat,(const CvMat*)0, weakResponses[cascadeStep]);
 							weakSum = cvSum(weakResponses[cascadeStep]).val[0];
 
-							if(weakSum > strongClassThres[cascadeStep])
-								predictions1dIm->at<uchar>(i,j) = 1;
-								//predictions.at<uchar>(r*tileNum*tileNum + i*tileNum + j,0) = 1;
+							//if(weakSum > strongClassThres[cascadeStep])
+								predictions2dIm->at<uchar>(i,j) = 1;
+
 						}
 					}
 				}
@@ -706,7 +499,7 @@ std::vector<cv::Mat*> cascade(int firstImage,int imNum, int tileSize, int imageS
 		cv::erode(*predictions1dIm,*predictions1dIm,cv::Mat());
 		cv::dilate(*predictions2dIm,*predictions2dIm,cv::Mat());
 		cv::erode(*predictions2dIm,*predictions2dIm,cv::Mat());
-
+		
 		predictions.push_back(predictions1dIm);
 		predictions.push_back(predictions2dIm);
 		std::cout << "image " << r+1 << std::endl;
