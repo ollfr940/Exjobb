@@ -80,9 +80,9 @@ void removeFalseClass(cv::Mat* pred, int kernelSize, int removeNum)
 {
 	int sum = 0;
 	int dist = kernelSize/2;
-	for(int i=dist; i<pred->cols-dist; i++)
+	for(int i=dist; i<pred->rows-dist; i++)
 	{
-		for(int j=dist; j<pred->rows-dist; j++)
+		for(int j=dist; j<pred->cols-dist; j++)
 		{
 			sum = 0;
 			if(pred->at<uchar>(i,j) == 1)
@@ -91,7 +91,6 @@ void removeFalseClass(cv::Mat* pred, int kernelSize, int removeNum)
 					for(int jj=-dist; jj<dist+1; jj++)
 						sum += pred->at<uchar>(i+ii,j+jj);
 
-				//std::cout << sum << std::endl;
 				if(sum < removeNum)
 					pred->at<uchar>(i,j) = 0;
 					
@@ -100,17 +99,33 @@ void removeFalseClass(cv::Mat* pred, int kernelSize, int removeNum)
 	}
 }
 
-cv::Mat createFeatures(int numberOfImages,int firstImage, int tileSize, int imageSize, int tileNum, int overlap, CalcSample* featureFunc)
+void downSampleIm(cv::Mat& im, cv::Mat& outIm, int downSample)
+{
+	for(int i=0; i<im.rows/downSample; i++)
+		for(int j=0; j<im.cols/downSample; j++)
+			outIm.at<uchar>(i,j) = im.at<uchar>(i*downSample,j*downSample);
+}
+
+cv::Mat createFeatures(int numberOfImages,int firstImage, int tileSize, int imageSize, int tileNum, int overlap, int downSample, CalcSample* featureFunc)
 {
 	std::cout << "Calculate " << featureFunc->name << " features...." << std::endl << std::endl;
 	int features = featureFunc->features, posOverlap = tileSize/overlap;
 	cv::Mat featureMatrix = cv::Mat::zeros(numberOfImages*tileNum*tileNum,features, CV_32FC1);
+	cv::Mat downSampledIm = cv::Mat::zeros(imageSize,imageSize,CV_8UC1);
+	cv::Mat laplacian = cv::Mat::zeros(imageSize,imageSize,CV_8UC1);
 	cv::Mat featureTile = cv::Mat::zeros(1,features,CV_32FC1);
 	cv::Mat im, tile, sobx, soby, canny,distanceMap;
 
 	for(int r = 0 ; r< numberOfImages ; r++)
 	{
 		im = cv::imread(intToStr(r+firstImage,false), CV_LOAD_IMAGE_GRAYSCALE);
+		if(downSample > 1)
+		{
+			//downSampleIm(im,downSampledIm,downSample);
+			cv::pyrDown(im,downSampledIm,cv::Size(imageSize,imageSize));
+			cv::Laplacian(downSampledIm,laplacian,3);
+			im = laplacian;
+		}
 
 		if(featureFunc->name == "I1D")
 		{
@@ -154,42 +169,11 @@ cv::Mat createFeatures(int numberOfImages,int firstImage, int tileSize, int imag
 	return featureMatrix;
 }
 
-/*
-cv::Mat createORBFeatures(int numberOfImages,int firstImage, int tileSize, int imageSize, int tileNum)
+
+std::vector<char> getResponses(int numberOfImages,int firstImage,int tileSize,int imageSize,int tileNum, int overlap, int downSample, bool training, std::string codeType)
 {
-	printf("Calculate FAST corner detection features....\n\n");
-	int features = 3;
-	cv::Mat featureMatrix = cv::Mat::zeros(numberOfImages*tileNum*tileNum,features, CV_32FC1);
-	int tiles = imageSize/tileSize;
-	cv::Mat im, tile, descriptors, mean, std;
-	std::vector<cv::KeyPoint> keyPoint;
-	cv::ORB orb;
+	cv::Mat downSampledGroundTruth = cv::Mat::zeros(imageSize,imageSize,CV_8UC1);
 
-	for(int r = 0 ; r< numberOfImages ; r++)
-	{
-		im = cv::imread(intToStrIm(r+firstImage), CV_LOAD_IMAGE_GRAYSCALE);
-
-		for(int i=0; i<tileNum; i++)
-		{
-			for(int j=0; j<tileNum; j++)
-			{
-				tile = im(cv::Rect(i*tileSize, j*tileSize, tileSize, tileSize));
-
-				orb(tile,cv::Mat(),keyPoint,descriptors);
-				if(keyPoint.size())
-					std::cout << keyPoint.size() << " " << descriptors.size() << std::endl;
-				//featureMatrix.at<float>(r*tileNum*tileNum+i*tileNum+j,0) = keyPoint.size();
-
-			}
-		}
-		std::cout << "image " << r+1 << std::endl;
-	}
-	return featureMatrix;
-}
-*/
-
-std::vector<char> getResponses(int numberOfImages,int firstImage,int tileSize,int imageSize,int tileNum, int overlap, bool training, std::string codeType)
-{
 	if(codeType == "1D")
 		printf("Calculate groundtruth for 1D codes....\n\n");
 	else if(codeType == "2D")
@@ -205,6 +189,13 @@ std::vector<char> getResponses(int numberOfImages,int firstImage,int tileSize,in
 	{
 		std::string filename = intToStr(r+firstImage, true);
 		groundTruth = cv::imread(filename, CV_LOAD_IMAGE_GRAYSCALE);
+
+		if(downSample > 1)
+		{
+			//downSampleIm(groundTruth,downSampledGroundTruth,downSample);
+			cv::pyrDown(groundTruth,downSampledGroundTruth,cv::Size(imageSize,imageSize));
+			groundTruth = downSampledGroundTruth;
+		}
 
 		if(!groundTruth.data)
 			std::cout << "error" << std::endl;
@@ -286,7 +277,7 @@ std::vector<char> getResponses(int numberOfImages,int firstImage,int tileSize,in
 	return responses;
 }
 
-void evaluateResult(int firstImage,int k, int scaleDown,int imNum, int tileSize, int imageSize, int tileNum, int overlap, CvBoost boost, cv::Mat& featureMat,std::vector<char>& responses, float* trueClass, float* falseClass,float strongClassThres)
+void evaluateResult(int firstImage,int k, int scaleDown,int imNum, int tileSize, int imageSize, int tileNum, int overlap,int downSample, CvBoost boost, cv::Mat& featureMat,std::vector<char>& responses, float* trueClass, float* falseClass,float strongClassThres)
 {
 
 	int features = featureMat.cols, imageCount=0, response;
@@ -297,6 +288,8 @@ void evaluateResult(int firstImage,int k, int scaleDown,int imNum, int tileSize,
 	int numOfWeights = weights->total;
 	cv::Mat testSample(1,features+1, CV_32FC1 );
 	cv::Mat Im(imageSize,imageSize,16);
+	cv::Mat im = cv::Mat::zeros(imageSize,imageSize,16);
+	cv::Mat downSampledIm = cv::Mat::zeros(imageSize,imageSize,16);
 	cv::Mat resizedIm(imageSize/scaleDown,imageSize/scaleDown,16);
 	CvMat* weakResponses = cvCreateMat(1,numOfWeights,CV_32FC1);
 
@@ -305,7 +298,16 @@ void evaluateResult(int firstImage,int k, int scaleDown,int imNum, int tileSize,
 		trueClass[i] = 0;
 		falseClass[i] = 0;
 		int trueReal = 0;
-		cv::Mat im = cv::imread(intToStr(firstImage+i,false));
+
+		im = cv::imread(intToStr(firstImage+i,false));
+
+		if(downSample > 1)
+		{
+			cv::pyrDown(im,downSampledIm,cv::Size(imageSize,imageSize));
+			im = downSampledIm;
+			//cv::GaussianBlur(downSampledIm,downSampledIm, cv::Size(0, 0), 3);
+			//cv::addWeighted(downSampledIm, 1.5, downSampledIm, -0.5, 0, downSampledIm);
+		}
 
 		if(i >= k && i<scaleDown*scaleDown+k)
 			cv::resize(im,resizedIm,cv::Size(imageSize/scaleDown,imageSize/scaleDown));
@@ -405,15 +407,15 @@ void visualizeFeature(int image,int imageSize, int tileSize, int tileNum, int fe
 }
 
 
-std::vector<cv::Mat*> cascade(int firstImage,int imNum, int tileSize, int imageSize, int tileNum, int overlap, std::vector<CvBoost*> boost,std::vector<float> strongClassThres, std::vector<CalcSample*> featureFunctions)
+std::vector<cv::Mat*> cascade(int firstImage,int imNum, int tileSize, int imageSize, int tileNum, int overlap, int downSample, std::vector<CvBoost*> boost,std::vector<float> strongClassThres, std::vector<CalcSample*> featureFunctions)
 {
 	double weakSum;
 	DWORD start, stop;
 	cv::Mat im, tile, gaussianBlur, sobx, soby, canny, distanceMap;
 	int cascadeStep, posOverlap = tileSize/overlap;
 	std::vector<CvMat*> weakResponses;
-	//cv::Mat predictions = cv::Mat::zeros(imNum*tileNum*tileNum,1,CV_8UC1);
 	cv::Mat* predictions1dIm, *predictions2dIm;
+	cv::Mat downSampledIm = cv::Mat::zeros(imageSize,imageSize,CV_8UC1);
 	std::vector<cv::Mat*> predictions;
 
 	for(int i=0; i<boost.size(); i++)
@@ -427,6 +429,13 @@ std::vector<cv::Mat*> cascade(int firstImage,int imNum, int tileSize, int imageS
 		predictions2dIm = new cv::Mat(cv::Mat::zeros(imNum,imNum,CV_8UC1));
 
 		im = cv::imread(intToStr(firstImage+r,false), CV_LOAD_IMAGE_GRAYSCALE);
+
+		if(downSample > 1)
+		{
+			downSampleIm(im,downSampledIm,downSample);
+			//cv::pyrDown(im,downSampledIm,cv::Size(imageSize,imageSize));
+			im = downSampledIm;
+		}
 
 		for( int i=0; i<tileNum; i++ )
 		{
@@ -460,7 +469,7 @@ std::vector<cv::Mat*> cascade(int firstImage,int imNum, int tileSize, int imageS
 						weakSum = cvSum(weakResponses[cascadeStep]).val[0];
 
 						if(weakSum > strongClassThres[cascadeStep])
-							predictions1dIm->at<uchar>(i,j) = 1;
+							predictions2dIm->at<uchar>(i,j) = 1;
 
 					}
 					else
@@ -483,8 +492,8 @@ std::vector<cv::Mat*> cascade(int firstImage,int imNum, int tileSize, int imageS
 							boost[cascadeStep]->predict(&testSampleCvMat,(const CvMat*)0, weakResponses[cascadeStep]);
 							weakSum = cvSum(weakResponses[cascadeStep]).val[0];
 
-							//if(weakSum > strongClassThres[cascadeStep])
-								predictions2dIm->at<uchar>(i,j) = 1;
+							if(weakSum > strongClassThres[cascadeStep])
+								predictions1dIm->at<uchar>(i,j) = 1;
 
 						}
 					}
@@ -492,16 +501,25 @@ std::vector<cv::Mat*> cascade(int firstImage,int imNum, int tileSize, int imageS
 
 			}
 		}
-		removeFalseClass(predictions1dIm,3,2);
-		removeFalseClass(predictions2dIm,5,6);
+		if(downSample == 1)
+		{
+			removeFalseClass(predictions1dIm,3,2);
+			removeFalseClass(predictions2dIm,5,6);
+		}
+		else if(downSample == 2)
+		{
+			//removeFalseClass(predictions1dIm,3,1);
+			//removeFalseClass(predictions2dIm,3,1);
+		}
 
 		cv::dilate(*predictions1dIm,*predictions1dIm,cv::Mat());
 		cv::erode(*predictions1dIm,*predictions1dIm,cv::Mat());
 		cv::dilate(*predictions2dIm,*predictions2dIm,cv::Mat());
 		cv::erode(*predictions2dIm,*predictions2dIm,cv::Mat());
-		
+
 		predictions.push_back(predictions1dIm);
 		predictions.push_back(predictions2dIm);
+
 		std::cout << "image " << r+1 << std::endl;
 	}
 	stop = GetTickCount();
@@ -511,7 +529,7 @@ std::vector<cv::Mat*> cascade(int firstImage,int imNum, int tileSize, int imageS
 }
 
 
-void evaluateCascade(int firstImage, int k, int scaleDown,int imNum, int tileSize, int imageSize, int tileNum, int overlap,std::vector<char>& responses1D, std::vector<char>& responses2D, std::vector<cv::Mat*>& predictions, float* trueClass1D, float* falseClass1D, float* trueClass2D, float* falseClass2D)
+void evaluateCascade(int firstImage, int k, int scaleDown,int imNum, int tileSize, int imageSize, int tileNum, int overlap, int downSample,std::vector<char>& responses1D, std::vector<char>& responses2D, std::vector<cv::Mat*>& predictions, float* trueClass1D, float* falseClass1D, float* trueClass2D, float* falseClass2D)
 {
 
 	int imageCount=0;
@@ -521,7 +539,7 @@ void evaluateCascade(int firstImage, int k, int scaleDown,int imNum, int tileSiz
 
 	cv::Mat Im(imageSize,imageSize,16);
 	cv::Mat resizedIm(imageSize/scaleDown,imageSize/scaleDown,16);
-	//cv::Mat predictionsIm = cv::Mat::zeros(tileNum,tileNum,CV_8UC1);
+	cv::Mat downSampledIm = cv::Mat::zeros(imageSize,imageSize,CV_8UC1);
 
 	for(int r = 0; r<imNum; r++)
 	{
@@ -532,13 +550,13 @@ void evaluateCascade(int firstImage, int k, int scaleDown,int imNum, int tileSiz
 		int trueReal1D = 0;
 		int trueReal2D = 0;
 		cv::Mat im = cv::imread(intToStr(firstImage+r,false));
-		
-	/*	for(int i=0; i<tileNum; i++)
-			for(int j=0; j<tileNum; j++)
-				predictionsIm.at<uchar>(i,j) = predictions.at<uchar>(r*tileNum*tileNum+i*tileNum+j,0);
 
-		cv::erode(predictionsIm,predictionsIm,cv::Mat());
-		cv::dilate(predictionsIm,predictionsIm,cv::Mat());*/
+		if(downSample > 1)
+		{
+			downSampleIm(im,downSampledIm,downSample);
+			//cv::pyrDown(im,downSampledIm,cv::Size(imageSize,imageSize));
+			im = downSampledIm;
+		}
 
 		if(r >= k && r<scaleDown*scaleDown+k)
 			cv::resize(im,resizedIm,cv::Size(imageSize/scaleDown,imageSize/scaleDown));
@@ -551,21 +569,6 @@ void evaluateCascade(int firstImage, int k, int scaleDown,int imNum, int tileSiz
 
 				if(r >= k && r<scaleDown*scaleDown+k)
 				{
-					/*
-					if(predictions.at<uchar>(vecInx,0) == 2 && responses2D[vecInx] != 'F')
-						rectangle(resizedIm,cvPoint(x*imPos,y*imPos),cvPoint(x*imPos + imPos,y*imPos+imPos),CV_RGB(0,255,0),1,8); //Green
-
-					else if(predictions.at<uchar>(vecInx,0) == 1 && responses1D[vecInx] != 'F')
-						rectangle(resizedIm,cvPoint(x*imPos,y*imPos),cvPoint(x*imPos + imPos,y*imPos+imPos),CV_RGB(0,0,255),1,8); //Blue
-
-					else if(responses2D[vecInx] == 'T' || responses1D[vecInx] == 'T')
-						rectangle(resizedIm,cvPoint(x*imPos,y*imPos),cvPoint(x*imPos + imPos,y*imPos+imPos),CV_RGB(255,0,0),1,8); //Red
-
-					else if(predictions.at<uchar>(vecInx,0) == 1)
-						rectangle(resizedIm,cvPoint(x*imPos,y*imPos),cvPoint(x*imPos + imPos,y*imPos+imPos),CV_RGB(0,255,255),1,8); //turquoise
-
-					else if(predictions.at<uchar>(vecInx,0) == 2)
-						rectangle(resizedIm,cvPoint(x*imPos,y*imPos),cvPoint(x*imPos + imPos,y*imPos+imPos),CV_RGB(255,255,0),1,8); //yellow*/
 					if(predictions[2*r+1]->at<uchar>(x,y) == 1 && responses2D[vecInx] != 'F')
 						rectangle(resizedIm,cvPoint(x*imPos/overlap,y*imPos/overlap),cvPoint(x*imPos/overlap + imPos,y*imPos/overlap+imPos),CV_RGB(0,255,0),1,8); //Green
 
@@ -582,25 +585,6 @@ void evaluateCascade(int firstImage, int k, int scaleDown,int imNum, int tileSiz
 						rectangle(resizedIm,cvPoint(x*imPos/overlap,y*imPos/overlap),cvPoint(x*imPos/overlap + imPos,y*imPos/overlap+imPos),CV_RGB(255,255,0),1,8); //yellow
 
 				}
-				/*
-				if(responses1D[vecInx] == 'T')
-					trueReal1D++;
-
-				if(predictions.at<uchar>(vecInx,0) == 1 && responses1D[vecInx] == 'T')
-					trueClass1D[r]++;
-
-				if(predictions.at<uchar>(vecInx,0) == 1 && responses1D[vecInx] == 'F')
-					falseClass1D[r]++;
-
-				if(responses2D[vecInx] == 'T')
-					trueReal2D++;
-
-				if(predictions.at<uchar>(vecInx,0) == 2 && responses2D[vecInx] == 'T')
-					trueClass2D[r]++;
-
-				if(predictions.at<uchar>(vecInx,0) == 2 && responses2D[vecInx] == 'F')
-					falseClass2D[r]++;*/
-
 				if(responses1D[vecInx] == 'T')
 					trueReal1D++;
 
