@@ -1,0 +1,24 @@
+\select@language {swedish}
+\select@language {english}
+\select@language {english}
+\select@language {english}
+\select@language {swedish}
+\select@language {english}
+\contentsline {chapter}{\numberline {1}Introduction}{1}
+\contentsline {section}{\numberline {1.1}Some \textlatin {\LaTeX }\ resources}{1}
+\contentsline {chapter}{\numberline {2}Overview}{3}
+\contentsline {section}{\numberline {2.1}System overview}{3}
+\contentsline {chapter}{\numberline {3}Preprocessing of data}{5}
+\contentsline {chapter}{\numberline {4}Machine learning methods}{7}
+\contentsline {section}{\numberline {4.1}AdaBoost}{7}
+\contentsline {chapter}{\numberline {5}Features used for detecting barcodes}{9}
+\contentsline {section}{\numberline {5.1}Standard deviation}{9}
+\contentsline {section}{\numberline {5.2}Structure tensor}{9}
+\contentsline {section}{\numberline {5.3}FAST corner detection}{10}
+\contentsline {section}{\numberline {5.4}Distance map}{10}
+\contentsline {section}{\numberline {5.5}Local binary pattern}{10}
+\contentsline {chapter}{\numberline {6}Cascade}{11}
+\contentsline {chapter}{\numberline {7}Evaluation}{13}
+\contentsline {section}{\numberline {7.1}Evaluation of features}{13}
+\contentsline {section}{\numberline {7.2}Evaluation of cascade}{13}
+\contentsline {chapter}{\numberline {8}Conclusions}{15}
