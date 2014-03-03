@@ -161,9 +161,15 @@ public:
 		{
 			testSample.at<float>(0,0) = 0;
 			testSample.at<float>(0,1) = score1D;
+			//testSample.at<float>(0,1) = eigenvectors.at<float>(0,0);
+			//testSample.at<float>(0,2) = eigenvectors.at<float>(0,1);
 		}
 		else
+		{
 			testSample.at<float>(0,0) = score1D;
+			//testSample.at<float>(0,0) = eigenvectors.at<float>(0,0);
+			//testSample.at<float>(0,1) = eigenvectors.at<float>(0,1);
+		}
 
 		return testSample;
 	}
@@ -171,6 +177,7 @@ public:
 	cv::Mat structureTensor, gaussianTile;
 	float score1D;
 	std::vector<float> eigenvalues;
+	//cv::Mat eigenvectors;
 };
 
 class CalcDistSample : public CalcSample

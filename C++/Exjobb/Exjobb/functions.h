@@ -106,13 +106,13 @@ void downSampleIm(cv::Mat& im, cv::Mat& outIm, int downSample)
 			outIm.at<uchar>(i,j) = im.at<uchar>(i*downSample,j*downSample);
 }
 
-cv::Mat createFeatures(int numberOfImages,int firstImage, int tileSize, int imageSize, int tileNum, int overlap, int downSample, CalcSample* featureFunc)
+cv::Mat createFeatures(int numberOfImages,int firstImage, int tileSize, int imageSize, int tileNum, int overlap, int downSample, bool laplace, CalcSample* featureFunc)
 {
 	std::cout << "Calculate " << featureFunc->name << " features...." << std::endl << std::endl;
 	int features = featureFunc->features, posOverlap = tileSize/overlap;
 	cv::Mat featureMatrix = cv::Mat::zeros(numberOfImages*tileNum*tileNum,features, CV_32FC1);
 	cv::Mat downSampledIm = cv::Mat::zeros(imageSize,imageSize,CV_8UC1);
-	cv::Mat laplacian = cv::Mat::zeros(imageSize,imageSize,CV_8UC1);
+	cv::Mat sharpIm = cv::Mat::zeros(imageSize,imageSize,CV_8UC1);
 	cv::Mat featureTile = cv::Mat::zeros(1,features,CV_32FC1);
 	cv::Mat im, tile, sobx, soby, canny,distanceMap;
 
@@ -123,9 +123,27 @@ cv::Mat createFeatures(int numberOfImages,int firstImage, int tileSize, int imag
 		{
 			//downSampleIm(im,downSampledIm,downSample);
 			cv::pyrDown(im,downSampledIm,cv::Size(imageSize,imageSize));
-			cv::Laplacian(downSampledIm,laplacian,3);
-			im = laplacian;
+			//std::cout << im.type() << std::endl;
+			//cv::add(downSampledIm,sharpIm,im);
+			im = downSampledIm;
+			//std::cout << im.type() << std::endl;
+			//cv::namedWindow("Test images",CV_WINDOW_AUTOSIZE);
+			//imshow("Test images", im);
+			//cv::waitKey();
+
 		}
+
+		if(laplace)
+		{
+			cv::Laplacian(downSampledIm,sharpIm,-1,5);
+			im = sharpIm;
+		}
+		//if(featureFunc->name == "STD" )
+		/*
+			cv::GaussianBlur(im,sharpIm,cv::Size(0,0),10);
+			cv::addWeighted(im,4, sharpIm,-2,0,sharpIm);
+			im = sharpIm;
+		}*/
 
 		if(featureFunc->name == "I1D")
 		{
@@ -407,15 +425,16 @@ void visualizeFeature(int image,int imageSize, int tileSize, int tileNum, int fe
 }
 
 
-std::vector<cv::Mat*> cascade(int firstImage,int imNum, int tileSize, int imageSize, int tileNum, int overlap, int downSample, std::vector<CvBoost*> boost,std::vector<float> strongClassThres, std::vector<CalcSample*> featureFunctions)
+std::vector<cv::Mat*> cascade(int firstImage,int imNum, int tileSize, int imageSize, int tileNum, int overlap, int downSample,bool laplace, std::vector<CvBoost*> boost,std::vector<float> strongClassThres, std::vector<CalcSample*> featureFunctions)
 {
 	double weakSum;
 	DWORD start, stop;
-	cv::Mat im, tile, gaussianBlur, sobx, soby, canny, distanceMap;
+	cv::Mat im, tile, gaussianBlur, sobx, soby, canny, distanceMap, laplaceTile, testSample;
 	int cascadeStep, posOverlap = tileSize/overlap;
 	std::vector<CvMat*> weakResponses;
 	cv::Mat* predictions1dIm, *predictions2dIm;
 	cv::Mat downSampledIm = cv::Mat::zeros(imageSize,imageSize,CV_8UC1);
+	cv::Mat laplacian = cv::Mat::zeros(imageSize,imageSize,CV_8UC1);
 	std::vector<cv::Mat*> predictions;
 
 	for(int i=0; i<boost.size(); i++)
@@ -432,20 +451,23 @@ std::vector<cv::Mat*> cascade(int firstImage,int imNum, int tileSize, int imageS
 
 		if(downSample > 1)
 		{
-			downSampleIm(im,downSampledIm,downSample);
-			//cv::pyrDown(im,downSampledIm,cv::Size(imageSize,imageSize));
+			cv::pyrDown(im,downSampledIm,cv::Size(imageSize,imageSize));
 			im = downSampledIm;
 		}
+
+		cv::Laplacian(downSampledIm,laplacian,-1,5);
 
 		for( int i=0; i<tileNum; i++ )
 		{
 			for(int j=0; j<tileNum; j++)
 			{
 				tile = im(cv::Rect(i*posOverlap, j*posOverlap, tileSize, tileSize));
+				laplaceTile = laplacian(cv::Rect(i*posOverlap, j*posOverlap, tileSize, tileSize));
 
 				//Calculate std
 				cascadeStep = 0;
-				cv::Mat testSample = featureFunctions[cascadeStep]->operator()(tile);
+				testSample = featureFunctions[cascadeStep]->operator()(laplaceTile);
+		
 				CvMat testSampleCvMat = testSample;
 				boost[cascadeStep]->predict(&testSampleCvMat,(const CvMat*)0, weakResponses[cascadeStep]);
 				weakSum = cvSum(weakResponses[cascadeStep]).val[0];
@@ -454,7 +476,7 @@ std::vector<cv::Mat*> cascade(int firstImage,int imNum, int tileSize, int imageS
 				{
 					//Calculate i1D corners
 					cascadeStep = 1;
-					cv::Mat testSample = featureFunctions[cascadeStep]->operator()(tile);
+					testSample = featureFunctions[cascadeStep]->operator()(laplaceTile);
 					CvMat testSampleCvMat = testSample;
 					boost[cascadeStep]->predict(&testSampleCvMat,(const CvMat*)0, weakResponses[cascadeStep]);
 					weakSum = cvSum(weakResponses[cascadeStep]).val[0];
@@ -462,14 +484,14 @@ std::vector<cv::Mat*> cascade(int firstImage,int imNum, int tileSize, int imageS
 					if(weakSum > strongClassThres[cascadeStep])
 					{
 						//Calculate distance
-						cascadeStep = 2;
-						cv::Mat testSample = featureFunctions[cascadeStep]->operator()(tile);
+						/*cascadeStep = 2;
+						testSample = featureFunctions[cascadeStep]->operator()(tile);
 						CvMat testSampleCvMat = testSample;
 						boost[cascadeStep]->predict(&testSampleCvMat,(const CvMat*)0, weakResponses[cascadeStep]);
-						weakSum = cvSum(weakResponses[cascadeStep]).val[0];
+						weakSum = cvSum(weakResponses[cascadeStep]).val[0];*/
 
-						if(weakSum > strongClassThres[cascadeStep])
-							predictions2dIm->at<uchar>(i,j) = 1;
+						//if(weakSum > strongClassThres[cascadeStep])
+							predictions1dIm->at<uchar>(i,j) = 1;
 
 					}
 					else
@@ -477,7 +499,7 @@ std::vector<cv::Mat*> cascade(int firstImage,int imNum, int tileSize, int imageS
 						//Calculate FAST structure
 						cascadeStep = 3;
 				
-						cv::Mat testSample = featureFunctions[cascadeStep]->operator()(tile);
+						testSample = featureFunctions[cascadeStep]->operator()(tile);
 						CvMat testSampleCvMat = testSample;
 						boost[cascadeStep]->predict(&testSampleCvMat,(const CvMat*)0, weakResponses[cascadeStep]);
 						weakSum = cvSum(weakResponses[cascadeStep]).val[0];
@@ -485,15 +507,15 @@ std::vector<cv::Mat*> cascade(int firstImage,int imNum, int tileSize, int imageS
 						if(weakSum > strongClassThres[cascadeStep])
 						{
 							//Calculate LBP
-							cascadeStep = 4;
+							/*cascadeStep = 4;
 
-							cv::Mat testSample = featureFunctions[cascadeStep]->operator()(tile);
+							testSample = featureFunctions[cascadeStep]->operator()(tile);
 							CvMat testSampleCvMat = testSample;
 							boost[cascadeStep]->predict(&testSampleCvMat,(const CvMat*)0, weakResponses[cascadeStep]);
 							weakSum = cvSum(weakResponses[cascadeStep]).val[0];
 
-							if(weakSum > strongClassThres[cascadeStep])
-								predictions1dIm->at<uchar>(i,j) = 1;
+							if(weakSum > strongClassThres[cascadeStep])*/
+								predictions2dIm->at<uchar>(i,j) = 1;
 
 						}
 					}
@@ -508,8 +530,8 @@ std::vector<cv::Mat*> cascade(int firstImage,int imNum, int tileSize, int imageS
 		}
 		else if(downSample == 2)
 		{
-			//removeFalseClass(predictions1dIm,3,1);
-			//removeFalseClass(predictions2dIm,3,1);
+			removeFalseClass(predictions1dIm,3,2);
+			removeFalseClass(predictions2dIm,3,2);
 		}
 
 		cv::dilate(*predictions1dIm,*predictions1dIm,cv::Mat());
@@ -553,8 +575,8 @@ void evaluateCascade(int firstImage, int k, int scaleDown,int imNum, int tileSiz
 
 		if(downSample > 1)
 		{
-			downSampleIm(im,downSampledIm,downSample);
-			//cv::pyrDown(im,downSampledIm,cv::Size(imageSize,imageSize));
+			//downSampleIm(im,downSampledIm,downSample);
+			cv::pyrDown(im,downSampledIm,cv::Size(imageSize,imageSize));
 			im = downSampledIm;
 		}
 
