@@ -1,0 +1,29 @@
+\begin{thebibliography}{4}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[P.~Bodnar()]{Bodnar}
+L.~Nyul P.~Bodnar.
+\newblock Barcode detection with uniform prtitioning and distance
+  tranformation.
+\newblock \emph{Univerity of Szeged}.
+
+\bibitem[Pietikainen(2010)]{Pietikainen:2010}
+M.~Pietikainen.
+\newblock Local binary pattern.
+\newblock \emph{Scholarpedia}, 2010.
+
+\bibitem[Rosten and Drummond(2005)]{Rosten:2005}
+E.~Rosten and T.~Drummond.
+\newblock Fusing points and lines for high performance tracking.
+\newblock \emph{IEEE International Conference on Computer Vision}, 2005.
+
+\bibitem[Rosten and Drummond(2006)]{Rosten:2006}
+E.~Rosten and T.~Drummond.
+\newblock Machine learning for high-speed corner detection.
+\newblock \emph{European Conference on Computer Vision}, 2006.
+
+\end{thebibliography}

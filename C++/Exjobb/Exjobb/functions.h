@@ -13,6 +13,7 @@
 
 typedef cv::Mat (*featureFunc) (cv::Mat&);
 
+
 std::string intToStr(int i, bool groundTruth)
 {
 	std::string bla = "000000";
@@ -76,22 +77,67 @@ void writeMatToFile(cv::Mat& m, std::vector<char> v, const char* filename)
 	fout.close();
 }
 
+void writeToMatlab(float* v, int length, const char* filename)
+{
+	std::ofstream fout(filename);
+
+	if(!fout)
+	{
+		std::cout<<"File Not Opened"<<std::endl;  return;
+	}
+
+	for(int i=0; i<length; i++)
+	{
+
+		fout << *v;
+		fout<<std::endl;
+		v++;
+	}
+
+	fout.close();
+}
+
 void removeFalseClass(cv::Mat* pred, int kernelSize, int removeNum)
 {
 	int sum = 0;
 	int dist = kernelSize/2;
-	for(int i=dist; i<pred->rows-dist; i++)
+	for(int i=0; i<pred->rows; i++)
 	{
-		for(int j=dist; j<pred->cols-dist; j++)
+		for(int j=0; j<pred->cols; j++)
 		{
 			sum = 0;
 			if(pred->at<uchar>(i,j) == 1)
 			{
-				for(int ii=-dist; ii<dist+1; ii++)
-					for(int jj=-dist; jj<dist+1; jj++)
-						sum += pred->at<uchar>(i+ii,j+jj);
+				if(i < dist)
+				{
+					for(int ii=-i; ii<dist+1; ii++)
+						for(int jj=-dist; jj<dist+1; jj++)
+							sum += pred->at<uchar>(i+ii,j+jj);
+				}
+				if(j < dist)
+				{
+					for(int ii=-dist; ii<dist+1; ii++)
+						for(int jj=-j; jj<dist+1; jj++)
+							sum += pred->at<uchar>(i+ii,j+jj);
+				}
+				if(i >= pred->cols - dist)
+				{
+					for(int ii=-dist; ii<dist+1; ii++)
+						for(int jj=-j; jj<i-pred->cols-dist; jj++)
+							sum += pred->at<uchar>(i+ii,j+jj);
+				}
+				if(j >= pred->rows - dist)
+				{
+					for(int ii=-dist; ii<i-pred->rows-dist; ii++)
+						for(int jj=-j; jj<dist+1; jj++)
+							sum += pred->at<uchar>(i+ii,j+jj);
+				}
+				else
+					for(int ii=-dist; ii<dist+1; ii++)
+						for(int jj=-dist; jj<dist+1; jj++)
+							sum += pred->at<uchar>(i+ii,j+jj);
 
-				if(sum < removeNum)
+				if(sum <= removeNum)
 					pred->at<uchar>(i,j) = 0;
 					
 			}
@@ -122,7 +168,8 @@ cv::Mat createFeatures(int numberOfImages,int firstImage, int tileSize, int imag
 		if(downSample > 1)
 		{
 			//downSampleIm(im,downSampledIm,downSample);
-			cv::pyrDown(im,downSampledIm,cv::Size(imageSize,imageSize));
+			cv::resize(im,downSampledIm,cv::Size(imageSize,imageSize));
+			//cv::pyrDown(im,downSampledIm,cv::Size(imageSize,imageSize));
 			//std::cout << im.type() << std::endl;
 			//cv::add(downSampledIm,sharpIm,im);
 			im = downSampledIm;
@@ -135,7 +182,7 @@ cv::Mat createFeatures(int numberOfImages,int firstImage, int tileSize, int imag
 
 		if(laplace)
 		{
-			cv::Laplacian(downSampledIm,sharpIm,-1,5);
+			cv::Laplacian(im,sharpIm,-1,5);
 			im = sharpIm;
 		}
 		//if(featureFunc->name == "STD" )
@@ -191,7 +238,7 @@ cv::Mat createFeatures(int numberOfImages,int firstImage, int tileSize, int imag
 std::vector<char> getResponses(int numberOfImages,int firstImage,int tileSize,int imageSize,int tileNum, int overlap, int downSample, bool training, std::string codeType)
 {
 	cv::Mat downSampledGroundTruth = cv::Mat::zeros(imageSize,imageSize,CV_8UC1);
-
+	float tileTrue = 0, tileIgnore = 0;
 	if(codeType == "1D")
 		printf("Calculate groundtruth for 1D codes....\n\n");
 	else if(codeType == "2D")
@@ -210,8 +257,8 @@ std::vector<char> getResponses(int numberOfImages,int firstImage,int tileSize,in
 
 		if(downSample > 1)
 		{
-			//downSampleIm(groundTruth,downSampledGroundTruth,downSample);
-			cv::pyrDown(groundTruth,downSampledGroundTruth,cv::Size(imageSize,imageSize));
+			downSampleIm(groundTruth,downSampledGroundTruth,downSample);
+			//cv::pyrDown(groundTruth,downSampledGroundTruth,cv::Size(imageSize,imageSize));
 			groundTruth = downSampledGroundTruth;
 		}
 
@@ -224,74 +271,77 @@ std::vector<char> getResponses(int numberOfImages,int firstImage,int tileSize,in
 			{
 				groundTruthTile = groundTruth(cv::Rect(i*posOverlap, j*posOverlap, tileSize, tileSize));
 
-				if(codeType == "1D")
-				{
-					if(training)
+					if(codeType == "1D")
 					{
-						if(cv::sum(groundTruthTile)(0) <= 100*tileSize*tileSize && cv::countNonZero(groundTruthTile) > 0.75*tileSize*tileSize)
-							responses.push_back('T');
+						if(training)
+						{
+							if(cv::sum(groundTruthTile)(0) <= 100*tileSize*tileSize && cv::countNonZero(groundTruthTile) > 0.75*tileSize*tileSize)
+								responses.push_back('T');
+							else
+								responses.push_back('F');
+						}
 						else
-							responses.push_back('F');
+						{
+							if(cv::sum(groundTruthTile)(0) <= 100*tileSize*tileSize && cv::countNonZero(groundTruthTile) > 0.75*tileSize*tileSize)
+								responses.push_back('T');
+							else if(cv::countNonZero(groundTruthTile) == 0)
+								responses.push_back('F');
+							else if(cv::sum(groundTruthTile)(0)/countNonZero(groundTruthTile) > 150)
+								responses.push_back('F');
+							else
+								responses.push_back('I');
+						}
+					}
+					else if(codeType == "2D")
+					{
+						if(training)
+						{
+							if(cv::sum(groundTruthTile)(0) > 150*tileSize*tileSize)
+								responses.push_back('T');
+							else
+								responses.push_back('F');
+						}
+						else
+						{
+							if(cv::sum(groundTruthTile)(0) > 150*tileSize*tileSize)
+								responses.push_back('T');
+							else if(cv::countNonZero(groundTruthTile) == 0)
+								responses.push_back('F');
+							else if(cv::sum(groundTruthTile)(0)/countNonZero(groundTruthTile) < 150)
+								responses.push_back('F');
+							else
+								responses.push_back('I');
+						}
 					}
 					else
 					{
-						if(cv::sum(groundTruthTile)(0) <= 100*tileSize*tileSize && cv::countNonZero(groundTruthTile) > 0.75*tileSize*tileSize)
-							responses.push_back('T');
-						else if(cv::countNonZero(groundTruthTile) == 0)
-							responses.push_back('F');
-						else if(cv::sum(groundTruthTile)(0)/countNonZero(groundTruthTile) > 150)
-							responses.push_back('F');
+
+						if(training)
+						{
+							if(cv::sum(groundTruthTile)(0) > 150*tileSize*tileSize)
+								responses.push_back('T');
+							else if(cv::sum(groundTruthTile)(0) <= 100*tileSize*tileSize && cv::countNonZero(groundTruthTile) > 0.75*tileSize*tileSize)
+								responses.push_back('T');
+							else
+								responses.push_back('F');
+						}
 						else
-							responses.push_back('I');
+						{
+							if(cv::sum(groundTruthTile)(0) > 150*tileSize*tileSize)
+								responses.push_back('T');
+							else if(cv::sum(groundTruthTile)(0) <= 100*tileSize*tileSize && cv::countNonZero(groundTruthTile) > 0.75*tileSize*tileSize)
+								responses.push_back('T');
+							else if(cv::countNonZero(groundTruthTile) == 0)
+								responses.push_back('F');
+							else
+								responses.push_back('I');
+						}
 					}
 				}
-				else if(codeType == "2D")
-				{
-					if(training)
-					{
-						if(cv::sum(groundTruthTile)(0) > 150*tileSize*tileSize)
-							responses.push_back('T');
-						else
-							responses.push_back('F');
-					}
-					else
-					{
-						if(cv::sum(groundTruthTile)(0) > 150*tileSize*tileSize)
-							responses.push_back('T');
-						else if(cv::countNonZero(groundTruthTile) == 0)
-							responses.push_back('F');
-						else if(cv::sum(groundTruthTile)(0)/countNonZero(groundTruthTile) < 150)
-							responses.push_back('F');
-						else
-							responses.push_back('I');
-					}
-				}
-				else
-				{
-					if(training)
-					{
-						if(cv::sum(groundTruthTile)(0) > 150*tileSize*tileSize)
-							responses.push_back('T');
-						else if(cv::sum(groundTruthTile)(0) <= 100*tileSize*tileSize && cv::countNonZero(groundTruthTile) > 0.75*tileSize*tileSize)
-							responses.push_back('T');
-						else
-							responses.push_back('F');
-					}
-					else
-					{
-						if(cv::sum(groundTruthTile)(0) > 150*tileSize*tileSize)
-							responses.push_back('T');
-						else if(cv::sum(groundTruthTile)(0) <= 100*tileSize*tileSize && cv::countNonZero(groundTruthTile) > 0.75*tileSize*tileSize)
-							responses.push_back('T');
-						else if(cv::countNonZero(groundTruthTile) == 0)
-							responses.push_back('F');
-						else
-							responses.push_back('I');
-					}
-				}
-			}
 		}
 	}
+
+
 	return responses;
 }
 
@@ -321,7 +371,9 @@ void evaluateResult(int firstImage,int k, int scaleDown,int imNum, int tileSize,
 
 		if(downSample > 1)
 		{
-			cv::pyrDown(im,downSampledIm,cv::Size(imageSize,imageSize));
+			cv::resize(im,downSampledIm,cv::Size(imageSize,imageSize));
+			//downSampleIm(im,downSampledIm,downSample);
+			//cv::pyrDown(im,downSampledIm,cv::Size(imageSize,imageSize));
 			im = downSampledIm;
 			//cv::GaussianBlur(downSampledIm,downSampledIm, cv::Size(0, 0), 3);
 			//cv::addWeighted(downSampledIm, 1.5, downSampledIm, -0.5, 0, downSampledIm);
@@ -354,9 +406,12 @@ void evaluateResult(int firstImage,int k, int scaleDown,int imNum, int tileSize,
 
 			if(i >= k && i<scaleDown*scaleDown+k)
 			{
-				if(response == 2 && responses[y+i*tileNum*tileNum] != 'F')
+				if(response == 2 && responses[y+i*tileNum*tileNum] == 'T')
 					rectangle(resizedIm,cvPoint(y/tileNum*imPos/overlap,y%tileNum*imPos/overlap),cvPoint(y/tileNum*imPos/overlap + imPos,y%tileNum*imPos/overlap+imPos),CV_RGB(0,255,0),1,8);
-
+				
+				else if(response == 2 && responses[y+i*tileNum*tileNum] == 'I')
+					rectangle(resizedIm,cvPoint(y/tileNum*imPos/overlap,y%tileNum*imPos/overlap),cvPoint(y/tileNum*imPos/overlap + imPos,y%tileNum*imPos/overlap+imPos),CV_RGB(0,255,255),1,8);
+				
 				else if(responses[y+i*tileNum*tileNum] == 'T')
 					rectangle(resizedIm,cvPoint(y/tileNum*imPos/overlap,y%tileNum*imPos/overlap),cvPoint(y/tileNum*imPos/overlap + imPos,y%tileNum*imPos/overlap+imPos),CV_RGB(255,0,0),1,8);
 
@@ -394,6 +449,7 @@ void evaluateResult(int firstImage,int k, int scaleDown,int imNum, int tileSize,
 	std::cout << "Amount of true tiles detected: " << totalTrueClass/totalTrueReal << std::endl
 		<< "Average false tiles per image: " << totalFalseClass/imNum << std::endl;
 
+	//cv::imwrite("std.png",Im);
 	cv::namedWindow("Test images",CV_WINDOW_AUTOSIZE);
 	imshow("Test images", Im);
 
@@ -451,11 +507,12 @@ std::vector<cv::Mat*> cascade(int firstImage,int imNum, int tileSize, int imageS
 
 		if(downSample > 1)
 		{
-			cv::pyrDown(im,downSampledIm,cv::Size(imageSize,imageSize));
+			cv::resize(im,downSampledIm,cv::Size(imageSize,imageSize));
+			//cv::pyrDown(im,downSampledIm,cv::Size(imageSize,imageSize));
 			im = downSampledIm;
 		}
 
-		cv::Laplacian(downSampledIm,laplacian,-1,5);
+		cv::Laplacian(im,laplacian,-1,5);
 
 		for( int i=0; i<tileNum; i++ )
 		{
@@ -484,13 +541,13 @@ std::vector<cv::Mat*> cascade(int firstImage,int imNum, int tileSize, int imageS
 					if(weakSum > strongClassThres[cascadeStep])
 					{
 						//Calculate distance
-						/*cascadeStep = 2;
+						cascadeStep = 2;
 						testSample = featureFunctions[cascadeStep]->operator()(tile);
 						CvMat testSampleCvMat = testSample;
 						boost[cascadeStep]->predict(&testSampleCvMat,(const CvMat*)0, weakResponses[cascadeStep]);
-						weakSum = cvSum(weakResponses[cascadeStep]).val[0];*/
+						weakSum = cvSum(weakResponses[cascadeStep]).val[0];
 
-						//if(weakSum > strongClassThres[cascadeStep])
+						if(weakSum > strongClassThres[cascadeStep])
 							predictions1dIm->at<uchar>(i,j) = 1;
 
 					}
@@ -507,14 +564,14 @@ std::vector<cv::Mat*> cascade(int firstImage,int imNum, int tileSize, int imageS
 						if(weakSum > strongClassThres[cascadeStep])
 						{
 							//Calculate LBP
-							/*cascadeStep = 4;
+							cascadeStep = 4;
 
 							testSample = featureFunctions[cascadeStep]->operator()(tile);
 							CvMat testSampleCvMat = testSample;
 							boost[cascadeStep]->predict(&testSampleCvMat,(const CvMat*)0, weakResponses[cascadeStep]);
 							weakSum = cvSum(weakResponses[cascadeStep]).val[0];
 
-							if(weakSum > strongClassThres[cascadeStep])*/
+							if(weakSum > strongClassThres[cascadeStep])
 								predictions2dIm->at<uchar>(i,j) = 1;
 
 						}
@@ -523,15 +580,26 @@ std::vector<cv::Mat*> cascade(int firstImage,int imNum, int tileSize, int imageS
 
 			}
 		}
-		if(downSample == 1)
+
+		if(tileSize == 24)
 		{
-			removeFalseClass(predictions1dIm,3,2);
+			removeFalseClass(predictions1dIm,3,1);
+			removeFalseClass(predictions2dIm,5,3);
+		}
+		else if(tileSize == 32)
+		{
+			//removeFalseClass(predictions1dIm,3,2);
+			removeFalseClass(predictions2dIm,5,5);
+		}
+		else if(tileSize == 48)
+		{
+			removeFalseClass(predictions1dIm,5,3);
 			removeFalseClass(predictions2dIm,5,6);
 		}
-		else if(downSample == 2)
+		else if(tileSize == 64)
 		{
-			removeFalseClass(predictions1dIm,3,2);
-			removeFalseClass(predictions2dIm,3,2);
+			removeFalseClass(predictions1dIm,5,3);
+			removeFalseClass(predictions2dIm,5,6);
 		}
 
 		cv::dilate(*predictions1dIm,*predictions1dIm,cv::Mat());
@@ -546,7 +614,6 @@ std::vector<cv::Mat*> cascade(int firstImage,int imNum, int tileSize, int imageS
 	}
 	stop = GetTickCount();
 	std::cout << "Average time per image: " << (float)(stop - start)/((float)imNum)/1000 << std::endl << std::endl; 
-
 	return predictions;
 }
 
@@ -575,8 +642,9 @@ void evaluateCascade(int firstImage, int k, int scaleDown,int imNum, int tileSiz
 
 		if(downSample > 1)
 		{
+			cv::resize(im,downSampledIm,cv::Size(imageSize,imageSize));
 			//downSampleIm(im,downSampledIm,downSample);
-			cv::pyrDown(im,downSampledIm,cv::Size(imageSize,imageSize));
+			//cv::pyrDown(im,downSampledIm,cv::Size(imageSize,imageSize));
 			im = downSampledIm;
 		}
 
@@ -654,12 +722,19 @@ void evaluateCascade(int firstImage, int k, int scaleDown,int imNum, int tileSiz
 			trueClass2D[r] = -20;
 
 	}
+
+	writeToMatlab(trueClass1D,imNum,"trueClass1D.txt");
+	writeToMatlab(falseClass1D,imNum,"falseClass1D.txt");
+	writeToMatlab(trueClass2D,imNum,"trueClass2D.txt");
+	writeToMatlab(falseClass2D,imNum,"falseClass2D.txt");
+
 	std::cout << "Amount of true 1D tiles detected: " << totalTrueClass1D/totalTrueReal1D << std::endl
 		<< "Average false 1D tiles per image: " << totalFalseClass1D/imNum << std::endl << std::endl;
 
 	std::cout << "Amount of true 2D tiles detected: " << totalTrueClass2D/totalTrueReal2D << std::endl
 		<< "Average false 2D tiles per image: " << totalFalseClass2D/imNum << std::endl;
 
+	cv::imwrite("Result24x24.jpg",Im);
 	cv::namedWindow("Test images",CV_WINDOW_AUTOSIZE);
 	imshow("Test images", Im);
 
@@ -670,6 +745,57 @@ void evaluateCascade(int firstImage, int k, int scaleDown,int imNum, int tileSiz
 	PlotManager pm2d;
 	pm2d.Plot("Result 2D-codes", trueClass2D  , imNum, 1,0,255,0);		//Green
 	pm2d.Plot("Result 2D-codes", falseClass2D  , imNum, 1,255,255,0);	//Yellow
+
+	cv::waitKey();
+	cv::destroyWindow("Test images");
+}
+
+
+
+void evaluateResponses(int firstImage,int k, int scaleDown,int imNum, int tileSize, int imageSize, int tileNum, int overlap,int downSample,std::vector<char>& responses)
+{
+
+	int imageCount=0, response;
+	int imPos = tileSize/scaleDown, posOverlap = tileSize/overlap;
+
+	cv::Mat Im(imageSize,imageSize,16);
+	cv::Mat im = cv::Mat::zeros(imageSize,imageSize,16);
+	cv::Mat downSampledIm = cv::Mat::zeros(imageSize,imageSize,16);
+	cv::Mat resizedIm(imageSize/scaleDown,imageSize/scaleDown,16);
+
+	for(int i=k; i<k+scaleDown*scaleDown; i++)
+	{
+
+		im = cv::imread(intToStr(firstImage+i,false));
+
+		if(downSample > 1)
+		{
+			cv::resize(im,downSampledIm,cv::Size(imageSize,imageSize));
+			im = downSampledIm;
+		}
+
+		cv::resize(im,resizedIm,cv::Size(imageSize/scaleDown,imageSize/scaleDown));
+
+		for( int y = 0; y < tileNum*tileNum; y++ )
+		{
+
+			if(i >= k && i<scaleDown*scaleDown+k)
+			{
+				if(responses[y+i*tileNum*tileNum] == 'T')
+					rectangle(resizedIm,cvPoint(y/tileNum*imPos/overlap,y%tileNum*imPos/overlap),cvPoint(y/tileNum*imPos/overlap + imPos,y%tileNum*imPos/overlap+imPos),CV_RGB(0,255,0),1,8);
+				
+			}
+
+
+		}
+
+		resizedIm.copyTo(Im(cv::Rect(imageCount/scaleDown*(imageSize/scaleDown),imageCount%scaleDown*(imageSize/scaleDown),imageSize/scaleDown,imageSize/scaleDown)));
+		imageCount++;
+		
+	}
+	//cv::imwrite("std.png",Im);
+	cv::namedWindow("Test images",CV_WINDOW_AUTOSIZE);
+	imshow("Test images", Im);
 
 	cv::waitKey();
 	cv::destroyWindow("Test images");

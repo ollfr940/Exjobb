@@ -13,50 +13,52 @@ using namespace cv;
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	bool training =  true;
-	bool cascadeTesting = false;
+	bool training =  false;
+	bool cascadeTesting = true;
+	bool testTileSize = false;
 	int images = 100;
 	int trainingImages = 100;
-	int tileSize = 48;
-	string codeType = "1D";
+	int tileSize = 24;
+	string codeType = "2D";
+	bool useLaplace = false;
 	int downSample = 2;
 	int imageSize = 2048/downSample;
-	int overlap = 2;
+	int overlap = 1;
 	int tileNum = imageSize/tileSize*overlap - (overlap-1);
 	
-	float thresholdStd = -6;//-5; //-4.5;
-	float thresholdFAST = -7;//-7; //-1.5;
-	float thresholdLBP = -10; //-4; //-3;
-	float thresholdI1D = -2.5; //-2.5;//-1.5;
-	float thresholdDist = -2; //-1.5;
-	float strongClassThres = thresholdI1D;
+	float thresholdStd = -4;
+	float thresholdFAST = -4;
+	float thresholdLBP = -3;
+	float thresholdI1D = -2.5;
+	float thresholdDist = -1.5;
+	float strongClassThres = thresholdStd;
 
 	//For testing
-	int scaleDown = 8;
+	int scaleDown = 2;
 	int firstImage = 100;
 	const int imNum = 165;
 
 	if(training)
 	{		
 		vector<char> trainingResponses = getResponses(images,0,tileSize,imageSize,tileNum,overlap,downSample,true,codeType);
-
+		
 		//CalcSample* featureFunc = new CalcSTDSample(1,cv::Mat(1,1,CV_32FC1),false);
-		CalcSample* featureFunc = new CalcI1DSample(1,cv::Mat(1,1,CV_32FC1),false);
+		//CalcSample* featureFunc = new CalcI1DSample(1,cv::Mat(1,1,CV_32FC1),false);
 		//CalcSample* featureFunc = new CalcDistSample(2,cv::Mat(1,2,CV_32FC1),false);
 		//CalcSample* featureFunc = new CalcFASTSample(3,cv::Mat(1,3,CV_32FC1),false);
-		//CalcSample* featureFunc = new CalcLBPSample(256,cv::Mat(1,256,CV_32FC1),false,cv::Mat::zeros(tileSize-2,tileSize-2,CV_32FC1),tileSize);
-		Mat trainingData = createFeatures(images,0,tileSize,imageSize,tileNum,overlap,downSample,true,featureFunc);
-		writeMatToFile(trainingData,trainingResponses,"i1d100x48_1D_downsample2_overlap2_laplace5_vec.txt");							//
+		CalcSample* featureFunc = new CalcLBPSample(256,cv::Mat(1,256,CV_32FC1),false,cv::Mat::zeros(tileSize-2,tileSize-2,CV_32FC1),tileSize);
+		Mat trainingData = createFeatures(images,0,tileSize,imageSize,tileNum,overlap,downSample,useLaplace,featureFunc);
+		writeMatToFile(trainingData,trainingResponses,"std100.txt");							//
 
 		CvMLData cvml;
-		cvml.read_csv("i1d100x48_1D_downsample2_overlap2_laplace5_vec.txt");															//
+		cvml.read_csv("std100.txt");															//
 		cvml.set_response_idx(0);
 		CvTrainTestSplit cvtts(trainingImages*tileNum*tileNum, true);
 		cvml.set_train_test_split(&cvtts);
 
 		CvBoost boost;
 		printf("Training....\n");
-		boost.train(&cvml, CvBoostParams(CvBoost::GENTLE, 100, 0.95, 1, false, 0), false);
+		boost.train(&cvml, CvBoostParams(CvBoost::GENTLE, 50, 0.95, 1, false, 0), false);
 
 
 		//Calculate the training error
@@ -67,20 +69,16 @@ int _tmain(int argc, _TCHAR* argv[])
 		cout << "Train error: " <<fl1 << endl 
 			<< "Test error: " << fl2 << endl << endl;
 
-		boost.save("./i1d100x48_boost100_1D_downsample2_overlap2_laplace5_vec.xml", "boost");											//
-
-
-		int scaleDown = 8;
-		int firstImage = trainingImages;
-		const int imNum = 165;
+		boost.save("./LBP50x64_boost_downsample1_overlap3.xml", "boost");											//
 
 		vector<char> testResponses = getResponses(imNum,firstImage,tileSize,imageSize,tileNum,overlap,downSample,false,codeType);
 		printf("Calculate features for testing:\n\n");
-		Mat testData = createFeatures(imNum,firstImage,tileSize,imageSize,tileNum,overlap,downSample,true,featureFunc);
 
-		writeMatToXML(testData,"i1d165x48_1D_downsample2_overlap2_laplace5_vec.xml");													//
+		Mat testData = createFeatures(imNum,firstImage,tileSize,imageSize,tileNum,overlap,downSample,useLaplace,featureFunc);
+
+		writeMatToXML(testData,"std165.xml");													//
 		float b[imNum], c[imNum];
-		evaluateResult(firstImage,20,scaleDown,imNum,tileSize,imageSize,tileNum,overlap,downSample,boost,testData,testResponses,b,c,strongClassThres);
+		evaluateResult(firstImage,65,scaleDown,imNum,tileSize,imageSize,tileNum,overlap,downSample,boost,testData,testResponses,b,c,strongClassThres);
 	}
 	else if(cascadeTesting)
 	{
@@ -100,11 +98,11 @@ int _tmain(int argc, _TCHAR* argv[])
 		CvBoost boost3;
 		CvBoost boost4;
 		CvBoost boost5;
-		boost1.load("std100x48_boost100_all_downsample2_overlap2_laplace5.xml");
-		boost2.load("i1d100x48_boost100_1D_downsample2_overlap2_laplace5.xml");
-		boost3.load("dist100x64_boost100_1D_downsample2_overlap2.xml");
-		boost4.load("fast100x48_boost100_2D_downsample2_overlap2.xml");
-		boost5.load("LBP100x64_boost100_2D_downsample2_overlap2.xml");
+		boost1.load("std100x24_boost_downsample2_overlap1_laplace.xml");
+		boost2.load("i1d100x24_boost_downsample2_overlap1_laplace.xml");
+		boost3.load("dist100x24_boost_downsample2_overlap1.xml");
+		boost4.load("fast100x24_boost_downsample2_overlap1.xml");
+		boost5.load("LBP100x24_boost_downsample2_overlap1.xml");
 		boost.push_back(&boost1);
 		boost.push_back(&boost2);
 		boost.push_back(&boost3);
@@ -118,17 +116,23 @@ int _tmain(int argc, _TCHAR* argv[])
 
 		vector<Mat*> predictions = cascade(firstImage,imNum,tileSize,imageSize,tileNum,overlap,downSample,false,boost,strongClassVector,featureFuncs);
 		float b[imNum], c[imNum], d[imNum], e[imNum];
-		evaluateCascade(firstImage,20,scaleDown,imNum,tileSize,imageSize,tileNum,overlap,downSample,testResponses1D,testResponses2D,predictions,b,c,d,e);
+		evaluateCascade(firstImage,80,scaleDown,imNum,tileSize,imageSize,tileNum,overlap,downSample,testResponses1D,testResponses2D,predictions,b,c,d,e);
+	}
+	else if(testTileSize)
+	{
+		vector<char> testResponses = getResponses(imNum,firstImage,tileSize,imageSize,tileNum,overlap,downSample,false,codeType);
+		evaluateResponses(firstImage,10000,scaleDown,imNum,tileSize,imageSize,tileNum,overlap,downSample,testResponses);
 	}
 	else
 	{
 		//Test with saved data																		
 		vector<char> testResponses = getResponses(imNum,firstImage,tileSize,imageSize,tileNum,overlap,downSample,false,codeType);
 		CvBoost boost;											
-		boost.load("dist100x48_boost100_1D_downsample2_overlap2.xml");
-		Mat testData = readMatFromXML("dist165x48_1D_downsample2_overlap2.xml");
+		boost.load("LBP100x64_boost_downsample1_overlap1.xml");
+
+		Mat testData = readMatFromXML("std165.xml");
 		float b[imNum], c[imNum];
-		evaluateResult(firstImage,100,scaleDown,imNum,tileSize,imageSize,tileNum,overlap,downSample,boost,testData,testResponses,b,c,strongClassThres);
+		evaluateResult(firstImage,0,scaleDown,imNum,tileSize,imageSize,tileNum,overlap,downSample,boost,testData,testResponses,b,c,strongClassThres);
 
 	}
 	return 0;
