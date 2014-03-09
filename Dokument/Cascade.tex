@@ -1,2 +1,81 @@
 \chapter{Cascade}
 \label{sec:Cascade}
+Since the system needs to work in real time it needs to be fast. One effective way to speed it up is to use a cascade when predicting the data. In the cascade one or several features are calculated at each step. In each step the corresponding classifier of the feature is used to classify the data. If the data is classified as true it will continue to the next step otherwise it will not be used any more. In the figure below the principle of the cascade is illustrated.
+
+\begin{figure}[H]
+\centering
+\tikzstyle{block} = [rectangle, draw, fill=blue!20, 
+    text width=5em, text centered, rounded corners, minimum height=4em]
+\tikzstyle{datablock} = [rectangle, draw, fill=blue!20, 
+    text width=5em, text centered, minimum height=8em]
+\tikzstyle{line} = [draw, -latex']
+\tikzstyle{predict} = [text centered]
+
+\begin{tikzpicture}[node distance = 2.5cm, auto]
+    % Place nodes
+    \node [datablock] (test) {test data};
+    \node [block, right of=test] (feature1) {feature 1};
+    \node [block, right of=feature1] (feature2) {feature 2};
+  	\node [block, right of=feature2] (feature3) {feature 3};
+  	\node [predict, right of=feature3] (true) {true};
+  	\node [predict, below of=feature1] (false1) {false};
+  	\node [predict, below of=feature2] (false2) {false};
+  	\node [predict, below of=feature3] (false3) {false};
+       
+    % Draw edges
+    \path [line] (test) -- (feature1);
+    \path [line] (feature1) -- (feature2);
+    \path [line] (feature2) -- (feature3);
+    \path [line] (feature3) -- (true);
+    \path [line] (feature1) -- (false1);
+    \path [line] (feature2) -- (false2);
+    \path [line] (feature3) -- (false3);
+
+\end{tikzpicture}
+\caption{Cascade model}
+\label{Cascade}
+\end{figure}
+
+By testing different setups 
+
+\begin{figure}[H]
+\centering
+\tikzstyle{block} = [rectangle, draw, fill=blue!20, 
+    text width=5em, text centered, rounded corners, minimum height=4em]
+\tikzstyle{datablock} = [rectangle, draw, fill=blue!20, 
+    text width=5em, text centered, minimum height=8em]
+\tikzstyle{line} = [draw, -latex']
+\tikzstyle{predict} = [text centered]
+
+\begin{tikzpicture}[node distance = 2.5cm, auto]
+    % Place nodes
+    \node [datablock] (test) {test data};
+    \node [block, right of=test] (std) {Standard deviation};
+    \node [block, right of=std] (tensor) {Structure tensor};
+  	\node [block, right of=tensor] (dist) {Distance map};
+  	\node [block, below of=tensor] (fast) {FAST};
+  	\node [block, right of=fast] (LBP) {LBP};
+  	\node [predict, right of=dist] (1d) {1D-code};
+  	\node [predict, right of=LBP] (2d) {2D-code};
+  	\node [predict, below of=std] (false1) {false};
+  	\node [predict, above of=dist] (false2) {false};
+  	\node [predict, below of=fast] (false3) {false};
+  	\node [predict, below of=LBP] (false4) {false};
+       
+    % Draw edges
+    \path [line] (test) -- (std);
+    \path [line] (std) -- (tensor);
+    \path [line] (tensor) -- (dist);
+    \path [line] (tensor) -- (fast);
+    \path [line] (fast) -- (LBP);
+    \path [line] (std) -- (false1);
+    \path [line] (dist) -- (false2);
+    \path [line] (fast) -- (false3);
+    \path [line] (LBP) -- (false4);
+    \path [line] (LBP) -- (2d);
+    \path [line] (dist) -- (1d);
+
+\end{tikzpicture}
+\caption{Cascade model 1}
+\label{Cascade}
+\end{figure}

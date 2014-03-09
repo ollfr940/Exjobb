@@ -1,11 +1,43 @@
 \chapter{Machine learning methods}
 \label{sec:Machine learning methods}
 
-\section{AdaBoost}
-\label{sec:AdaBoost}
-The machine learning method that will be tried out first is Boosting which is described in [2]. The basic idea is to train a number of weak classifiers which during the testing will be combined to a strong classifier. To each data in the training dataset there are corresponding weights which are equal for all data at the beginning. The weak classifiers are trained sequentially and after each step the weights are adjusted depending if they were correctly or incorrectly classified.
+\section{Discrete AdaBoost}
+\label{sec:Discret AdaBoost}
+For detection of barecodes the machine learning method discrete AdaBoost has been used which is described in \citep{Friedman:2000}. The algorithm is described in \ref{AdaBoost}. The basic idea is to train a number of weak classifiers which during the testing will be combined to a strong classifier. To each data in the training dataset there are corresponding weights which are equal for all data at the beginning. The weak classifiers are trained sequentially and after each step the weights are adjusted depending if they were correctly or incorrectly classified.
 
-There exist several variants of Boosting algorithms. The one that will be tried out first is discrete AdaBoost. The weak classifiers in discrete AdaBoost are split functions which simply classifies the data as true or false. The split functions consist of a number of different parameters. The most basic function, which will be tried out first, only has one parameter, a threshold. The function search for a threshold in one dimension at a time and choose the one whish best separates the data. 
+\begin{figure} [H]
+\line(1,0){250} \newline
+Given: $(x_1,y_1),...,(x_m,y_m), \text{where } x_i\in X, y_i \in [-1,+1]$. \newline
+$\text{Initialize: } D_1(i)=1/m \text{for } i=1,...,m.$ \newline \newline
+$\text{For } t=1,...,T:$
+\begin{itemize}
+\item $\text{Train weak learner using distribution } D_t.$
+\item $\text{Get weak classifier } h_t : X \to {-1,+1}$.
+\item \text{Aim: select with low weighted error:}
+\begin{center} 
+
+	$\epsilon_t = \sum_{i=1}^{m} D_t(i)I(y_i ! h_t(x_i))$ \newline
+	$\text{where I is the split function}$ \newline
+\end{center}
+\item Chose $ \alpha_t = \frac{1}{2}(\frac{1-\epsilon_t}{\epsilon_t})$
+\item Update, for $t = 1,...,m:$
+\begin{center} 
+
+	$D_{t+1}(i) = \frac{D_t(i)exp(-\alpha_ty_ih_t(x_i)}{Z_t}$ \newline
+	Where $Z_t$ is a normalization factor. \newline
+\end{center}
+\end{itemize}
+Final strong classifier
+\begin{center}
+	$ H(x) = sign(\sum_{t=1}^{T} {\alpha_th_t(x)}-\phi)$
+\end{center}
+\line(1,0){250}
+\caption{Algorithm for discrete AdaBoost}
+\label{AdaBoost}
+\end{figure}
+
+
+The split functions may consist of a number of different parameters. The most basic function, which has been used here, only has one parameter, a threshold. The function search for a threshold in one dimension at a time and choose the one whish best separates the data. 
 % Local Variables:
 % TeX-master: "main.tex"
 % End:

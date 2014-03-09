@@ -1,24 +1,42 @@
-\chapter{Preprocessing of data}
-\label{sec:Preprocessing of data}
+\chapter{Data processing}
+\label{sec:Data processing}
 
-A big amount of gray scale images containing different kinds of code will be available. For each image the corresponding ground truth will also be available. One part of the images will be used as training data and the rest will be used as test data. The idea is to divide each image into blocks of same size. The amount of training data
+\section{The dataset}
+\label{The dataset}
+The dataset consists of a big amount of gray scale images containing 1D- and 2D-codes of different sizes and orientation. For each image the corresponding ground truth are also available. The images are first of all divided into one training dataset and one testing dataset. Each image are then divided into tiles of the same size. 
 \begin{center}
-
-\begin{math}
-A_{m,n} =
- \begin{pmatrix}
-  a_{1,1} & a_{1,2} & \cdots & a_{1,n} \\
-  a_{2,1} & a_{2,2} & \cdots & a_{2,n} \\
-  \vdots  & \vdots  & \ddots & \vdots  \\
-  a_{m,1} & a_{m,2} & \cdots & a_{m,n}
- \end{pmatrix}
-\end{math}
+	$x = [x_1,...,x_N]$
 \end{center}
-will then be the number of blocks in each image times the number of training images. The blocks can either overlap each other or just lay next each other. Overlapped blocks will lead to higher accuracy but more data have to be processed. Each data will consist of a feature vector:
+With corresponding ground truth:
+\begin{center}
+	$y = [y_1,...,y_N]$
+\end{center}
+The tiles can either overlap each other or just lay next to each other. For each tile a number of different features will be calculated, i.e. each tile consists of a feature vector:
+\begin{center}
+\begin{math}
+	x_i =  
+	\begin{pmatrix}
+		 f_1 \\ \vdots \\ f_M
+	\end{pmatrix}
+\end{math}
+\end{center}  
+The features are in some way based on the pixel values in the tile.
 
-Each feature will in some way describes the corresponding block. The only information that is available is the intensities of the pixels in each block; consequently all features will always, in some way, be based on the pixel values.
+During testing each data will get a prediction. These can have four different states based on the relation between the prediction and the ground truth:
+\begin{itemize}
+	\item true true
+	\item false true
+	\item true false
+	\item false false
+\end{itemize}
 
+\section{Preprocessing}
+\label{Preprocessing}
+Some of the features used in the system gives better result with some preprocessing. The reason for this is that the codes in some of the images have less contrast than others. Here a Laplace filter is applied to the images to make them a bit sharper. However some of the features gives better result without any preprocessing, therefore the filtered images are only used for calculation of some of the features.
 
+\section{Postprocessing}
+\label{Postprocessing}
+At the end of the cascade when all the test data have been predicted there are some postprocessing before obtaining the final result. The reason for this is to remove some possible true false classifications. The false classifications are often distinctive since the true true classifications usually lay in clusters. Here a filter is applied which removes isolated true classifications. After that some morphological operations are done fill some possible holes in the areas where the codes are.
 % Local Variables:
 % TeX-master: "main.tex"
 % End:
