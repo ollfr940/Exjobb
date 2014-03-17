@@ -3,45 +3,84 @@
 using namespace std;
 using namespace cv;
 
-vector<Mat*> produceTrainingData(int num, int imageSize)
+void writeMatToFile(Mat& m, Mat& r,int imageNum, const char* filename)
+{
+	std::ofstream fout(filename);
+
+	if(!fout)
+	{
+		std::cout<<"File Not Opened"<<std::endl;  return;
+	}
+
+	for(int i=0; i<m.rows; i++)
+	{
+		fout << r.at<int>(i,0) << ',';
+		for(int j=0; j<m.cols-1; j++)
+		{
+			fout<<m.at<float>(i,j)<<',';
+		}
+		fout << m.at<float>(i,m.cols-1);
+		fout<<std::endl;
+	}
+
+	fout.close();
+}
+
+vector<Mat*> produceData(int first, int characters, int num, int imageSize)
 {
 	vector<Mat*> imageVec;
 	Mat* image;
+	int charSize = (int)imageSize/30 + 1;
 	cv::RNG rng;
 	char d = '0';
+	d += first;
 	string dstr;
 
-	for(int c=0; c<10; c++)
+	for(int c=0; c<characters; c++)
 	{
-	for(int j=0; j<num; j++)
-	{
-		image = new Mat(Mat::zeros(imageSize,imageSize,CV_8UC1));
-		cv::add(*image,255,*image);
-		cv::Point org;
-		org.x = 10;
-		org.y = imageSize-10;
-		dstr = d;
-		cv::putText(*image,dstr , org, 0, 5 ,0, 4, 8);
+		for(int j=0; j<num; j++)
+		{
+			image = new Mat(Mat::zeros(120,120,CV_8UC1));
+			cv::add(*image,255,*image);
+			cv::Point org;
+			org.x = 10;
+			org.y = 10;
+			dstr = d;
+			cv::putText(*image,dstr , org, 0, charSize ,0, 4, 8,true);
+
+			imageVec.push_back(image);
+			cv::imshow("im", *image);
+			cv::waitKey();
+
+		}
 		d++;
-
-		imageVec.push_back(image);
-		//cv::imshow("im", image);
-		//cv::waitKey();
-
-	}
 	}
 	return imageVec;
 }
 
+Mat createResponses(int trainingNum, int characters)
+{
+	int res = 0;
+	Mat responses = Mat::zeros(trainingNum*characters,1,CV_32SC1);
+	for(int i = 0; i< characters; i++)
+	{
+		for(int j=0; j<trainingNum; j++)
+			responses.at<int>(i*trainingNum+j,0) = res;
+		res++;
+	}
+	return responses;
+}
 
 Mat createRectFeatures(vector<Mat*> trainingData, int trainingNum, int imageSize)
 {
 	Mat integralIm, integralRect;
-	int p;
-	Mat featureMat = Mat::zeros(trainingData.size(),8*8*17,CV_8UC1);
+	float p;
+	int filtNum = 28578;
+	Mat featureMat = Mat::zeros(trainingData.size(),filtNum,CV_32FC1);
 	for(int im=0; im<trainingData.size(); im++)
 	{
 		//integral(*trainingData[im], integralIm);
+		int indx = 0; 
 		for(int rectx=0; rectx <8; rectx++)
 		{
 			for(int recty=0; recty <8; recty++)
@@ -55,46 +94,91 @@ Mat createRectFeatures(vector<Mat*> trainingData, int trainingNum, int imageSize
 				{
 					for(int j=0; j<rectNumy; j++)
 					{
-						integral((*trainingData[im])(Rect(i*rectSizex,j*rectSizey,rectSizex,rectSizey)),integralRect);
-
-						p = integralRect.at<uchar>(rectSizex-1,rectSizey-1) - integralRect.at<uchar>(rectSizex*0.5,rectSizey-1);
-						featureMat.at<uchar>(im, rectx*17+recty*17) += 2*p - integralRect.at<uchar>(rectSizex-1,rectSizey-1);
-						p = integralRect.at<uchar>(rectSizex-1,rectSizey-1) - integralRect.at<uchar>(rectSizex-1,rectSizey/2);
-						featureMat.at<uchar>(im, rectx*17+recty*17+1) += 2*p - integralRect.at<uchar>(rectSizex-1,rectSizey-1);
-						p = integralRect.at<uchar>(rectSizex*0.75,rectSizey-1) - integralRect.at<uchar>(rectSizex*0.25,rectSizey-1);
-						featureMat.at<uchar>(im, rectx*17+recty*17+2) += 2*p - integralRect.at<uchar>(rectSizex-1,rectSizey-1);
-						p = integralRect.at<uchar>(rectSizex-1,rectSizey*0.75) - integralRect.at<uchar>(rectSizex-1,rectSizey*0.25);
-						featureMat.at<uchar>(im, rectx*17+recty*17+3) += 2*p - integralRect.at<uchar>(rectSizex-1,rectSizey-1);
-						p = integralRect.at<uchar>(rectSizex*0.75,rectSizey*0.75) - integralRect.at<uchar>(rectSizex*0.25,rectSizey*0.75) - integralRect.at<uchar>(rectSizex*0.75,rectSizey*0.25) + integralRect.at<uchar>(rectSizex*0.25,rectSizey*0.25);
-						featureMat.at<uchar>(im, rectx*17+recty*17+4) += 2*p - integralRect.at<uchar>(rectSizex-1,rectSizey-1);
-						p = integralRect.at<uchar>(rectSizex-1,rectSizey-1) -  integralRect.at<uchar>(rectSizex*0.25,rectSizey-1) - integralRect.at<uchar>(rectSizex-1,rectSizey*0.25) + integralRect.at<uchar>(rectSizex*0.25,rectSizey*0.25);
-						featureMat.at<uchar>(im, rectx*17+recty*17+5) += 2*p - integralRect.at<uchar>(rectSizex-1,rectSizey-1);
-						p = integralRect.at<uchar>(rectSizex*0.75,rectSizey-1) - integralRect.at<uchar>(rectSizex*0.75,rectSizey*0.25);
-						featureMat.at<uchar>(im, rectx*17+recty*17+6) += 2*p - integralRect.at<uchar>(rectSizex-1,rectSizey-1);
-						p = integralRect.at<uchar>(rectSizex*0.75,rectSizey*0.75);
-						featureMat.at<uchar>(im, rectx*17+recty*17+7) += 2*p - integralRect.at<uchar>(rectSizex-1,rectSizey-1);
-						p = integralRect.at<uchar>(rectSizex-1,rectSizey*0.75) - integralRect.at<uchar>(rectSizex*0.25,rectSizey*0.75);
-						featureMat.at<uchar>(im, rectx*17+recty*17+8) += 2*p - integralRect.at<uchar>(rectSizex-1,rectSizey-1);
-						p = integralRect.at<uchar>(rectSizex-1,rectSizey*0.75) - integralRect.at<uchar>(rectSizex*0.25,rectSizey*0.75) - integralRect.at<uchar>(rectSizex-1,rectSizey*0.25) + integralRect.at<uchar>(rectSizex-1*0.25,rectSizey-1*0.25);
-						featureMat.at<uchar>(im, rectx*17+recty*17+9) += 2*p - integralRect.at<uchar>(rectSizex-1,rectSizey-1);
-						p = integralRect.at<uchar>(rectSizex*0.75,rectSizey*0.75) - integralRect.at<uchar>(rectSizex*0.75,rectSizey*0.25);
-						featureMat.at<uchar>(im, rectx*17+recty*17+10) += 2*p - integralRect.at<uchar>(rectSizex-1,rectSizey-1);
-						p = integralRect.at<uchar>(rectSizex*0.75,rectSizey*0.75) - integralRect.at<uchar>(rectSizex*0.25,rectSizey*0.75);
-						featureMat.at<uchar>(im, rectx*17+recty*17+11) += 2*p - integralRect.at<uchar>(rectSizex-1,rectSizey-1);
-						p = integralRect.at<uchar>(rectSizex*0.75,rectSizey-1) - integralRect.at<uchar>(rectSizex*0.25,rectSizey-1) - integralRect.at<uchar>(rectSizex*0.25,rectSizey*0.75) + integralRect.at<uchar>(rectSizex*0.25,rectSizey*0.25);
-						featureMat.at<uchar>(im, rectx*17+recty*17+12) += 2*p - integralRect.at<uchar>(rectSizex-1,rectSizey-1);
-						p = integralRect.at<uchar>(rectSizex-1,rectSizey-1) - integralRect.at<uchar>(rectSizex*0.75,rectSizey-1);
-						featureMat.at<uchar>(im, rectx*17+recty*17+13) += 2*p - integralRect.at<uchar>(rectSizex-1,rectSizey-1);
-						p = integralRect.at<uchar>(rectSizex*0.25,rectSizey-1);
-						featureMat.at<uchar>(im, rectx*17+recty*17+14) += 2*p - integralRect.at<uchar>(rectSizex-1,rectSizey-1);
-						p = integralRect.at<uchar>(rectSizex-1,rectSizey-1) - integralRect.at<uchar>(rectSizex-1,rectSizey*0.75);
-						featureMat.at<uchar>(im, rectx*17+recty*17+15) += 2*p - integralRect.at<uchar>(rectSizex-1,rectSizey-1);
-						p = integralRect.at<uchar>(rectSizex-1,rectSizey*0.25);
-						featureMat.at<uchar>(im, rectx*17+recty*17+16) += 2*p - integralRect.at<uchar>(rectSizex-1,rectSizey-1);
+						integral((*trainingData[im])(Rect(i*rectSizex,j*rectSizey,rectSizex,rectSizey)),integralRect,CV_32FC1);
+		
+						p = integralRect.at<float>(rectSizey,rectSizex) - integralRect.at<float>(rectSizey*0.5,rectSizex);
+						featureMat.at<float>(im, indx) = 2*p - integralRect.at<float>(rectSizey,rectSizex);
+						indx++;
+						p = integralRect.at<float>(rectSizey,rectSizex) - integralRect.at<float>(rectSizey,rectSizex/2);
+						featureMat.at<float>(im, indx) = 2*p - integralRect.at<float>(rectSizey,rectSizex);
+						indx++;
+						p = integralRect.at<float>(rectSizey*0.75,rectSizex) - integralRect.at<float>(rectSizey*0.25,rectSizex);
+						featureMat.at<float>(im, indx) = 2*p - integralRect.at<float>(rectSizey,rectSizex);
+						indx++;
+						p = integralRect.at<float>(rectSizey,rectSizex*0.75) - integralRect.at<float>(rectSizey,rectSizex*0.25);
+						featureMat.at<float>(im, indx) = 2*p - integralRect.at<float>(rectSizey,rectSizex);
+						indx++;
+						p = integralRect.at<float>(rectSizey*0.75,rectSizex*0.75) - integralRect.at<float>(rectSizey*0.25,rectSizex*0.75) - integralRect.at<float>(rectSizey*0.75,rectSizex*0.25) + integralRect.at<float>(rectSizey*0.25,rectSizex*0.25);
+						featureMat.at<float>(im, indx) = 2*p - integralRect.at<float>(rectSizey,rectSizex);
+						indx++;
+						p = integralRect.at<float>(rectSizey,rectSizex) -  integralRect.at<float>(rectSizey*0.25,rectSizex) - integralRect.at<float>(rectSizey,rectSizex*0.25) + integralRect.at<float>(rectSizey*0.25,rectSizex*0.25);
+						featureMat.at<float>(im, indx) = 2*p - integralRect.at<float>(rectSizey,rectSizex);
+						indx++;
+						p = integralRect.at<float>(rectSizey*0.75,rectSizex) - integralRect.at<float>(rectSizey*0.75,rectSizex*0.25);
+						featureMat.at<float>(im, indx) = 2*p - integralRect.at<float>(rectSizey,rectSizex);
+						indx++;
+						p = integralRect.at<float>(rectSizey*0.75,rectSizex*0.75);
+						featureMat.at<float>(im, indx) = 2*p - integralRect.at<float>(rectSizey,rectSizex);
+						indx++;
+						p = integralRect.at<float>(rectSizey,rectSizex*0.75) - integralRect.at<float>(rectSizey*0.25,rectSizex*0.75);
+						featureMat.at<float>(im, indx) = 2*p - integralRect.at<float>(rectSizey,rectSizex);
+						indx++;
+						p = integralRect.at<float>(rectSizey,rectSizex*0.75) - integralRect.at<float>(rectSizey*0.25,rectSizex*0.75) - integralRect.at<float>(rectSizey,rectSizex*0.25) + integralRect.at<float>(rectSizey*0.25,rectSizex*0.25);
+						featureMat.at<float>(im, indx) = 2*p - integralRect.at<float>(rectSizey,rectSizex);
+						indx++;
+						p = integralRect.at<float>(rectSizey*0.75,rectSizex*0.75) - integralRect.at<float>(rectSizey*0.75,rectSizex*0.25);
+						featureMat.at<float>(im, indx) = 2*p - integralRect.at<float>(rectSizey,rectSizex);
+						indx++;
+						p = integralRect.at<float>(rectSizey*0.75,rectSizex*0.75) - integralRect.at<float>(rectSizey*0.25,rectSizex*0.75);
+						featureMat.at<float>(im, indx) = 2*p - integralRect.at<float>(rectSizey,rectSizex);
+						indx++;
+						p = integralRect.at<float>(rectSizey*0.75,rectSizex) - integralRect.at<float>(rectSizey*0.25,rectSizex) - integralRect.at<float>(rectSizey*0.25,rectSizex*0.75) + integralRect.at<float>(rectSizey*0.25,rectSizex*0.25);
+						featureMat.at<float>(im, indx) = 2*p - integralRect.at<float>(rectSizey-1,rectSizex-1);
+						indx++;
+						p = integralRect.at<float>(rectSizey,rectSizex) - integralRect.at<float>(rectSizey*0.75,rectSizex);
+						featureMat.at<float>(im, indx) = 2*p - integralRect.at<float>(rectSizey,rectSizex);
+						indx++;
+						p = integralRect.at<float>(rectSizey*0.25,rectSizex);
+						featureMat.at<float>(im, indx) = 2*p - integralRect.at<float>(rectSizey,rectSizex);
+						indx++;
+						p = integralRect.at<float>(rectSizey,rectSizex) - integralRect.at<float>(rectSizey,rectSizex*0.75);
+						featureMat.at<float>(im, indx) = 2*p - integralRect.at<float>(rectSizey,rectSizex);
+						indx++;
+						p = integralRect.at<float>(rectSizey,rectSizex*0.25);
+						featureMat.at<float>(im, indx) = 2*p - integralRect.at<float>(rectSizey,rectSizex);
+						indx++;
 					}
 				}
 			}
 		}
+
 	}
 	return featureMat;
+}
+
+
+Mat creatSumFeatures(vector<Mat*> trainingData, int trainingNum, int imageSize,bool test)
+{
+	cout << trainingData.size() << endl;
+	if(test)
+	{
+		Mat featureMat = Mat::zeros(trainingData.size(),2,CV_32FC1);
+		featureMat.at<int>(0,0) = 10;
+		for(int im=0; im<trainingData.size(); im++)
+		{
+			featureMat.at<float>(im,1) = mean(*trainingData[im])(0);
+
+		}
+		return featureMat;
+	}
+	else
+	{
+		Mat featureMat = Mat::zeros(trainingData.size(),1,CV_32FC1);
+		for(int im=0; im<trainingData.size(); im++)
+		{
+			featureMat.at<float>(im,0) = mean(*trainingData[im])(0);
+			cout << featureMat.at<float>(im,0) << endl;
+		}
+		return featureMat;
+	}
 }
