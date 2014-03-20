@@ -42,7 +42,7 @@ void rotate(Mat& src, double angle,int imageSize, double scale)
 }
 
 
-RandomCharacters produceData(int numOfChars, int charSize, string type)
+RandomCharacters produceData(int numOfChars, int charSize, string type,double angle)
 {
 	RandomCharacters chars;
 	chars.responses = Mat::zeros(numOfChars,1,CV_32SC1);
@@ -51,7 +51,7 @@ RandomCharacters produceData(int numOfChars, int charSize, string type)
 	double fontSize = charSize/30 + 1;
 	uint64 initValue = time(0);
 	cv::RNG rng(initValue);
-	double angle, scale = 1.0;
+	double randomAngle, scale = 1.0;
 	char d, randd;
 	string dstr;
 
@@ -78,11 +78,13 @@ RandomCharacters produceData(int numOfChars, int charSize, string type)
 
 		image = new Mat(Mat::zeros(charSize,charSize,CV_8UC1));
 		cv::add(*image,255,*image);
-		cv::Point org(10,110);
+		cv::Point org;
+		org.x = rng.uniform(-10,30);
+		org.y = rng.uniform(charSize-20, charSize+20);
 		dstr = randd;
-		angle = rng.uniform(-20,20);
+		randomAngle = rng.uniform(-angle,angle);
 		cv::putText(*image,dstr , org, 0, fontSize ,0, 4, 8,false);
-		rotate(*image,angle,charSize,scale);
+		rotate(*image,randomAngle,charSize,scale);
 		chars.randChars.push_back(image);
 		//cv::imshow("im", *image);
 		//cv::waitKey();
@@ -90,7 +92,7 @@ RandomCharacters produceData(int numOfChars, int charSize, string type)
 	return chars;
 }
 
-RandomCharactersImages createTestImages(int numOfImages, int numOfChars, int charSize, int imageSize, string type)
+RandomCharactersImages createTestImages(int numOfImages, int numOfChars, int charSize, int imageSize, string type,double angle)
 {
 	RandomCharactersImages charImages;
 	Mat* image, *responses;
@@ -99,7 +101,7 @@ RandomCharactersImages createTestImages(int numOfImages, int numOfChars, int cha
 	int charSizeR = charSize/30 + 1;
 	uint64 initValue = time(0);
 	cv::RNG rng(initValue);
-	double angle, scale = 1.0;
+	double randomAngle, scale = 1.0;
 	char d, randd;
 	string dstr;
 
@@ -138,10 +140,10 @@ RandomCharactersImages createTestImages(int numOfImages, int numOfChars, int cha
 				responseRect = Mat::zeros(charSize,charSize,CV_8UC1);
 				add(characterRect,255,characterRect);
 				add(responseRect,(int)randd,responseRect);
-				cv::Point org(10,10);
-				angle = rng.uniform(180-30,180+30);
-				cv::putText(characterRect,dstr , org, 0, charSizeR ,0, 4, 8,true);
-				rotate(characterRect,angle,charSize,scale);
+				cv::Point org(10,charSize-10);
+				randomAngle = rng.uniform(-angle,angle);
+				cv::putText(characterRect,dstr , org, 0, charSizeR ,0, 4, 8,false);
+				rotate(characterRect,randomAngle,charSize,scale);
 				characterRect.copyTo((*image)(Rect(xPos,yPos,charSize,charSize)));
 				responseRect.copyTo((*responses)(Rect(xPos,yPos,charSize,charSize)));
 
@@ -201,9 +203,9 @@ Mat createRectFeatures(RandomCharacters trainingData,int numOfChars, int charSiz
 	return featureMat;
 }
 
-void evaluateRect(CvRTrees& tree, int testNum, int imageSize,string type)
+void evaluateRect(CvRTrees& tree, int testNum, int imageSize,string type, double angle)
 {
-	RandomCharacters testData = produceData(testNum,imageSize,type);
+	RandomCharacters testData = produceData(testNum,imageSize,type,angle);
 	Mat testFeatures = createRectFeatures(testData,testNum, imageSize);
 
 	for(int im=0; im<testNum; im++)
@@ -213,15 +215,18 @@ void evaluateRect(CvRTrees& tree, int testNum, int imageSize,string type)
 	}
 }
 
-vector<Mat*> predictImages(RandomCharactersImages& randIms, CvRTrees& tree,int imNum, int imageSize, int charSize, int overlap, int tileNum, string type)
+vector<Mat*> predictImages(RandomCharactersImages& randIms, CvRTrees& forest,int imNum, int imageSize, int charSize, int overlap, int tileNum, int numOfTrees,double desicionThres, string type)
 {
 	CalcRectSample calcRect;
 	int xPos, yPos, predPosx, predPosy;
-	Mat imRect, integralRect;
+	Mat imRect, integralRect, imRectHalf1,imRectHalf2,imRectHalf3,imRectHalf4;
 	vector<Mat*> predictions;
 	Mat* pred;
 	int filtNum = 28578;
 	Mat featureMat = Mat::zeros(1,filtNum,CV_32FC1);
+	Mat treePred;
+	double minVal, maxVal;
+	int minIndx, maxIndx;
 
 	for(int im=0; im<imNum; im++)
 	{
@@ -235,7 +240,11 @@ vector<Mat*> predictImages(RandomCharactersImages& randIms, CvRTrees& tree,int i
 			while(xPos < imageSize-charSize)
 			{
 				imRect = (*randIms.randChars[im])(Rect(xPos,yPos,charSize,charSize));
-				if(sum(imRect)(0) < charSize*charSize*255)
+				imRectHalf1 = imRect(Rect(0,0,charSize/2,charSize));
+				imRectHalf2 = imRect(Rect(charSize/2,0,charSize/2,charSize));
+				imRectHalf3 = imRect(Rect(0,0,charSize,charSize/2));
+				imRectHalf4 = imRect(Rect(0,charSize/2,charSize,charSize/2));
+				if(sum(imRect)(0) < charSize*charSize*255 && sum(imRectHalf1)(0) < charSize*charSize*255/2 && sum(imRectHalf2)(0) < charSize*charSize*255/2 && sum(imRectHalf3)(0) < charSize*charSize*255/2 && sum(imRectHalf4)(0) < charSize*charSize*255/2)
 				{
 					int indx = 0; 
 					for(int rectx=0; rectx <8; rectx++)
@@ -258,15 +267,29 @@ vector<Mat*> predictImages(RandomCharactersImages& randIms, CvRTrees& tree,int i
 						}
 					}
 
-					pred->at<uchar>(predPosx,predPosy) = tree.predict(featureMat);
+					//pred->at<uchar>(predPosx,predPosy) = forest.predict(featureMat);
+
+					treePred = Mat::zeros(256,1,CV_8UC1);
+
+					for(int t=0; t<numOfTrees; t++)
+					{
+						CvForestTree* tree = forest.get_tree(t);
+						treePred.at<uchar>(tree->predict(featureMat)->value,0)++;
+					}
+					cv::minMaxIdx(treePred,&minVal,&maxVal,&minIndx,&maxIndx);
+					//cout << treePred << endl;
+					//cout << numOfTrees << endl;
+					if(maxVal > numOfTrees*desicionThres)
+						pred->at<uchar>(predPosx,predPosy) = maxIndx;
+
 					xPos += charSize/overlap;
 					predPosx++;
 					//yPos += charSize/overlap;
 				}
 				else
 				{
-					xPos += charSize;
-					predPosx += overlap;
+					xPos += charSize/overlap; // charSize;
+					predPosx++; // += overlap;
 					//yPos += charSize;
 				}
 			}
@@ -282,37 +305,67 @@ vector<Mat*> predictImages(RandomCharactersImages& randIms, CvRTrees& tree,int i
 
 void evaluateResult(vector<Mat*> predictions, RandomCharactersImages& randIms,  int imageSize, int charSize, int tileNum, int overlap)
 {
-	int overlapTile = imageSize/tileNum;
+	int overlapTile = charSize/overlap;
 	char p;
 	char maxRes;
 	string charStr;
-	int charSizeR = overlapTile/40 + 1;
+	double charSizeR = 0.25;//charSize/(100*overlap) + 1;
 	int charPos = overlapTile/12;
 	Mat characterRect, responseRect;
 	Mat visulizePred = Mat(Mat::zeros(imageSize,imageSize,CV_8UC3));
 	add(visulizePred,255,visulizePred);
+
+	//histogram parameters
+		MatND hist;
+		int channels[2];
+		int	histSize[1];
+		float range[2];
+		channels[0] = 0; channels[1] = 1; 
+		histSize[0] = 256;
+		range[0] = 0; range[1] = 256; //charSize*charSize/(overlap*overlap);
+		const float* ranges[] = {range};
+		double minVal, maxVal;
+		int minIndx, maxIndx;
+		vector<Mat> mergeIm;
+
 	for(int i=0; i<predictions.size(); i++)
 	{
+		//mergeIm.push_back(*randIms.randChars[i]);
+		//mergeIm.push_back(*randIms.randChars[i]);
+		//mergeIm.push_back(*randIms.randChars[i]);
+		//merge(mergeIm,visulizePred);
+
 		for(int x=0; x<tileNum; x++)
 		{
 			for(int y=0; y<tileNum; y++)
 			{
+				responseRect = (*randIms.responses[i])(Rect(x*overlapTile,y*overlapTile,charSize,charSize));
+				calcHist(&responseRect,1,channels,cv::Mat(),hist,1,histSize,ranges,true,false);
+				cv::minMaxIdx(hist,&minVal,&maxVal,&minIndx,&maxIndx);
+
 				if(predictions[i]->at<uchar>(x,y))
 				{
 					p = predictions[i]->at<uchar>(x,y);
 					charStr = p;
 					characterRect = Mat::zeros(overlapTile,overlapTile,CV_8UC3);
-					add(characterRect,255,characterRect);
+					//add(characterRect,255,characterRect);
 					cv::Point org(charPos,overlapTile-charPos);
 
-					//responseRect = (*randIms.responses[i])(Rect(x*overlapTile,y*overlapTile,overlapTile,overlapTile));
+					if(p == (char)maxIndx)
+					{
+						cv::putText(characterRect,charStr , org, 0, charSizeR,CV_RGB(0,255,0), 1, 8,false);
+					}
+					else
+					{
+						add(characterRect,255,characterRect);
+						cv::putText(characterRect,charStr , org, 0, charSizeR ,CV_RGB(255,0,0), 1, 8,false);
+					}
 					
-					//cout << p << endl << maxRes << endl << endl;
-					//if(p == (char)maxRes)
-						cv::putText(characterRect,charStr , org, 0, charSizeR,CV_RGB(255,0,0), 4, 8,false);
-					//else
-						//cv::putText(characterRect,charStr , org, 0, charSizeR ,CV_RGB(0,255,0), 4, 8,false);
-
+					characterRect.copyTo(visulizePred(Rect(x*overlapTile,y*overlapTile,overlapTile,overlapTile)));
+				}
+				else if(maxIndx != 0)
+				{
+					characterRect = Mat::zeros(overlapTile,overlapTile,CV_8UC3);
 					characterRect.copyTo(visulizePred(Rect(x*overlapTile,y*overlapTile,overlapTile,overlapTile)));
 				}
 			}

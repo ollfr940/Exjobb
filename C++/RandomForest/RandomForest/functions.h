@@ -14,13 +14,13 @@
 #define FUNCTIONS_H
 
 void writeMatToFile(cv::Mat& m,cv::Mat& r,int imageNum, const char* filename);
-RandomCharacters produceData(int numOfChars, int charSize, std::string type);
+RandomCharacters produceData(int numOfChars, int charSize, std::string type,double angle);
 cv::Mat createResponses(int trainingNum, int characters);
 cv::Mat createRectFeatures(RandomCharacters trainingData, int numOfChars, int imSize);
 void rotate(cv::Mat& src, double angle,int imageSize, double scale);
-void evaluateRect(CvRTrees& tree, int testNum, int imageSize,std::string type);
+void evaluateRect(CvRTrees& tree, int testNum, int imageSize,std::string type, double angle);
 void evaluateResult(std::vector<cv::Mat*> predictions,RandomCharactersImages& randIms, int imageSize, int charSize, int tileNum, int overlap);
-std::vector<cv::Mat*> predictImages(RandomCharactersImages& randIms, CvRTrees& tree,int imNum, int imageSize, int charSize, int overlap, int tileNum, std::string type);
-RandomCharactersImages createTestImages(int numOfImages, int numOfChars, int charSize, int imageSize, std::string type);
+std::vector<cv::Mat*> predictImages(RandomCharactersImages& randIms, CvRTrees& tree,int imNum, int imageSize, int charSize, int overlap, int tileNum,int numOfTrees,double desicionThres, std::string type);
+RandomCharactersImages createTestImages(int numOfImages, int numOfChars, int charSize, int imageSize, std::string type,double angle);
 
 #endif
