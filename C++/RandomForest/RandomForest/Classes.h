@@ -7,6 +7,12 @@
 #ifndef CLASSES_H
 #define CLASSES_H
 
+struct CSize
+{
+	int width;
+	int height;
+};
+
 struct RandomCharacters
 {
 	std::vector<cv::Mat*> randChars;
