@@ -7,6 +7,8 @@
 #ifndef CLASSES_H
 #define CLASSES_H
 
+
+
 struct CSize
 {
 	int width;
@@ -24,7 +26,7 @@ struct RandomCharactersImages
 	std::vector<cv::Mat*> randChars;
 	std::vector<cv::Mat*> responses;
 };
-
+/*
 class CalcSample
 {
 public:
@@ -93,6 +95,27 @@ public:
 		indx++;
 	}
 
+};*/
+/*
+class CalcRandomPointPairsSample
+{
+public:
+	CalcRandomPointPairsSample() {}
+
+	void operator() (cv::Mat& pointVector, cv::Mat& featureMat, cv::Mat* image, int numOfPoints, int im)
+	{
+		int x1, y1, x2, y2;
+		for(int i=0; i<numOfPoints; i++)
+		{
+			x1 = pointVector.at<int>(i,0);
+			y1 = pointVector.at<int>(i,1);
+			x2 = pointVector.at<int>(i,2);
+			y2 = pointVector.at<int>(i,3);
+			if(image->at<float>(x1,y1) > image->at<float>(x2,y2))
+				featureMat.at<float>(im, i) = 1;
+		}
+	}
 };
+*/
 
 #endif
