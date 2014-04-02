@@ -85,15 +85,23 @@ void calcRectFeatureTile(Mat& tile, Mat& featureMat, int width, int height, int 
 void calcPointPairsFeaturesTile(Mat& tile, Mat& featureMat, Mat& pointVector, int numOfPoints, int im)
 {
 	int x1, y1, x2, y2;
+	//int n=0;
 	for(int i=0; i<numOfPoints; i++)
 	{
 		x1 = pointVector.at<int>(i,0);
 		y1 = pointVector.at<int>(i,1);
 		x2 = pointVector.at<int>(i,2);
 		y2 = pointVector.at<int>(i,3);
-		if(tile.at<float>(x1,y1) > tile.at<float>(x2,y2))
+		if(tile.at<uchar>(x1,y1) > tile.at<uchar>(x2,y2))
 			featureMat.at<float>(im, i) = 1;
+		else if(tile.at<uchar>(x1,y1) < tile.at<uchar>(x2,y2))
+			featureMat.at<float>(im,i) = -1;
+
+		//if(featureMat.at<float>(im,i) != 0)
+			//n++;
 	}
+	//if(n > 1000)
+		//cout <<  " sdf " << n << endl;
 }
 
 void calcLinesFeaturesTile(Mat& tile, Mat& featureMat, Mat& pointVector, int numOfLines, int im)
@@ -120,7 +128,7 @@ void calcLinesFeaturesTile(Mat& tile, Mat& featureMat, Mat& pointVector, int num
 		for(; x<x2; x++)
 		{
 			y = k*x + m;
-			if(tile.at<float>(x,y) == 0 && v)
+			if(tile.at<uchar>(x,y) == 0 && v)
 			{
 				featureMat.at<float>(im,i)++;
 				v = false;
@@ -154,7 +162,7 @@ Mat calcFeaturesTraining(RandomCharacters trainingData, int numOfPoints, string 
 	else if(featureType == "points")
 	{
 		printf("Create random point pairs features....\n\n");
-		Mat pointPairVector = Mat::zeros(numOfPoints,4,CV_32FC1);
+		Mat pointPairVector = Mat::zeros(numOfPoints,4,CV_32SC1);
 		Mat featureMat = Mat::zeros(numOfCharacters,numOfPoints,CV_32FC1);
 		cv::RNG rng(0);
 		int distThreshold = 20;

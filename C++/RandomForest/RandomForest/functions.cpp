@@ -5,7 +5,7 @@ using namespace std;
 using namespace cv;
 
 
-RandomCharacters produceData(int numOfChars, int charSize, string type,double angle, double fontSize, int numOfClasses)
+RandomCharacters produceData(int numOfChars, int charSize, string type,double angle, int charDiv, double fontSize, int numOfClasses)
 {
 	printf("Produce data....\n\n");
 	RandomCharacters chars;
@@ -40,11 +40,11 @@ RandomCharacters produceData(int numOfChars, int charSize, string type,double an
 			image = new Mat(Mat::zeros(charSize,charSize,CV_8UC1));
 			cv::add(*image,255,*image);
 			cv::Point org;
-			org.x = rng.uniform(20-20,20+20);
-			org.y = rng.uniform(charSize-20-20, charSize-20+20);
+			org.x = rng.uniform(20-charDiv,20+charDiv);
+			org.y = rng.uniform(charSize-20-charDiv, charSize-20+charDiv);
 			dstr = d;
 			randomAngle = rng.uniform(-angle,angle);
-			cv::putText(*image,dstr , org, 0, fontSize ,0, 6, 8,false);
+			cv::putText(*image,dstr , org, 0, fontSize ,0, 10, 8,false);
 			rotate(*image,randomAngle,charSize,charSize,scale);
 			chars.randChars.push_back(image);
 			//cv::imshow("im", *image);
@@ -103,7 +103,7 @@ RandomCharacters produceDataFromImage(vector<Rect*> boxVec, vector<char> boxRes,
 	return chars;
 }
 
-RandomCharactersImages createTestImages(int numOfImages, int numOfChars, int charSize, int imageSize, string type,double angle, double fontSize, int numOfClasses)
+RandomCharactersImages createTestImages(int numOfImages, int numOfChars, int charSize, int imageWidth, int imageHeight, string type,double angle, double fontSize, int numOfClasses)
 {
 	printf("Create test images....\n\n");
 	RandomCharactersImages charImages;
@@ -130,16 +130,16 @@ RandomCharactersImages createTestImages(int numOfImages, int numOfChars, int cha
 
 	for(int im=0; im<numOfImages; im++)
 	{
-		image = new Mat(Mat::zeros(imageSize,imageSize,CV_8UC1));
-		responses = new Mat(Mat::zeros(imageSize,imageSize,CV_8UC1));
+		image = new Mat(Mat::zeros(imageWidth,imageHeight,CV_8UC1));
+		responses = new Mat(Mat::zeros(imageWidth,imageHeight,CV_8UC1));
 		cv::add(*image,255,*image);
 
 		for(int c=0; c<numOfChars; c++)
 		{
 			randd = d + rng.uniform(0,numOfClasses);
 
-			xPos = rng.uniform(0,imageSize-charSize);
-			yPos = rng.uniform(0,imageSize-charSize);
+			xPos = rng.uniform(0,imageWidth-charSize);
+			yPos = rng.uniform(0,imageHeight-charSize);
 
 			if(!sum((*responses)(Rect(xPos,yPos,charSize,charSize)))(0))
 			{
@@ -150,7 +150,7 @@ RandomCharactersImages createTestImages(int numOfImages, int numOfChars, int cha
 				add(responseRect,(int)randd,responseRect);
 				cv::Point org(10,charSize-10);
 				randomAngle = rng.uniform(-angle,angle);
-				cv::putText(characterRect,dstr , org, 0, fontSize ,0, 6, 8,false);
+				cv::putText(characterRect,dstr , org, 0, fontSize ,0, 10, 8,false);
 				rotate(characterRect,randomAngle,charSize,charSize,scale);
 				characterRect.copyTo((*image)(Rect(xPos,yPos,charSize,charSize)));
 				responseRect.copyTo((*responses)(Rect(xPos,yPos,charSize,charSize)));
@@ -256,7 +256,7 @@ cout << "Predicted value: " << (char)tree.predict(testFeatures.row(im)) << endl 
 }
 }*/
 
-vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> forestVector,int imNum, int imageSize, int charSizeX, int charSizeY, int overlap, int numOfTrees,double desicionThres, int numOfPointPairs, string charType, string featureType)
+vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> forestVector,int imNum, int imageWidth, int imageHeight, int charSizeX, int charSizeY, int overlap, int numOfTrees,double desicionThres, int numOfPointPairs, string charType, string featureType)
 {
 	printf("Detecting characters in images....\n\n");
 	//CalcRectSample calcRect;
@@ -267,8 +267,8 @@ vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> fo
 	vector<Mat*> predictions;
 	Mat* pred;
 	char proxIndx;
-	int tileNumX = imageSize/charSizeX*overlap - (overlap-1);
-	int tileNumY = imageSize/charSizeY*overlap - (overlap-1);
+	int tileNumX = imageWidth/charSizeX*overlap - (overlap-1);
+	int tileNumY = imageHeight/charSizeY*overlap - (overlap-1);
 
 	if(featureType == "rects")
 	{
@@ -289,7 +289,7 @@ vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> fo
 	float proxOld, proxNew;
 	char prox;
 	int numOfForests = (int)forestVector.size();
-	Mat pointPairVector = Mat::zeros(numOfPointPairs,4,CV_32FC1);
+	Mat pointPairVector = Mat::zeros(numOfPointPairs,4,CV_32SC1);
 
 	if(featureType == "points")
 	{
@@ -310,7 +310,6 @@ vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> fo
 				x2 = rng.uniform(0,charSizeX);
 				y2 = rng.uniform(0,charSizeY);
 			}
-
 			pointPairVector.at<int>(i,0) = x1;
 			pointPairVector.at<int>(i,1) = y1;
 			pointPairVector.at<int>(i,2) = x2;
@@ -326,9 +325,9 @@ vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> fo
 		yPos = 0;
 		predPosx = 0;
 		predPosy = 0;
-		while(yPos < imageSize-charSizeY && predPosy < tileNumY)
+		while(yPos < imageHeight-charSizeY && predPosy < tileNumY)
 		{
-			while(xPos < imageSize-charSizeX && predPosx < tileNumX)
+			while(xPos < imageWidth-charSizeX && predPosx < tileNumX)
 			{
 				int rectArea = charSizeX*charSizeY*255;
 				imRect = (*randIms.randChars[im])(Rect(xPos,yPos,charSizeX,charSizeY));
@@ -362,7 +361,10 @@ vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> fo
 					if(featureType == "rects")
 						calcRectFeatureTile(imRect,featureMat,charSizeX,charSizeY,0);
 					else if(featureType == "points")
+					{
+						featureMat = Mat::zeros(1,numOfPointPairs,CV_32FC1);
 						calcPointPairsFeaturesTile(imRect,featureMat,pointPairVector,numOfPointPairs,0);
+					}
 					else
 						abort();
 
@@ -540,20 +542,20 @@ vector<Mat*> predictImagesRandomPoints(RandomCharactersImages& randIms, vector<C
 	return predictions;
 }*/
 
-void evaluateResult(vector<Mat*> predictions, RandomCharactersImages& randIms,  int imageSize, int charSizeX, int charSizeY, int numOfImages, int overlap)
+void evaluateResult(vector<Mat*> predictions, RandomCharactersImages& randIms,  int imageWidth, int imageHeigth, int charSizeX, int charSizeY, int numOfImages, int overlap)
 {
 	printf("Visulize result....\n\n");
 	int overlapTileX = charSizeX/overlap;
 	int overlapTileY = charSizeY/overlap;
-	int tileNumX = imageSize/charSizeX*overlap - (overlap-1);
-	int tileNumY = imageSize/charSizeY*overlap - (overlap-1);
+	int tileNumX = imageWidth/charSizeX*overlap - (overlap-1);
+	int tileNumY = imageHeigth/charSizeY*overlap - (overlap-1);
 	char p;
 	int numOfTrue, numOfFalse;
 	char maxRes;
 	string charStr;
 	double charSizeR = 0.25;//charSize/(100*overlap) + 1;
 	Mat characterRect, responseRect;
-	Mat visulizePred = Mat::zeros(imageSize,imageSize,CV_8UC3);
+	Mat visulizePred = Mat::zeros(imageWidth,imageHeigth,CV_8UC3);
 	add(visulizePred,255,visulizePred);
 	//histogram parameters
 	MatND hist;
