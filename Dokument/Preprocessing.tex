@@ -11,7 +11,7 @@ With corresponding ground truth:
 \begin{center}
 	$y = [y_1,...,y_N]$
 \end{center}
-The tiles can either overlap each other or just lay next to each other. For each tile a number of different features will be calculated, i.e. each tile consists of a feature vector:
+The tiles can either overlap each other or just lay next to each other. For each tile a number of different features are calculated, i.e. each tile consists of a feature vector:
 \begin{center}
 \begin{math}
 	x_i =  
@@ -24,10 +24,10 @@ The features are in some way based on the pixel values in the tile.
 
 During testing each data will get a prediction. These can have four different states based on the relation between the prediction and the ground truth:
 \begin{itemize}
-	\item true true
-	\item false true
-	\item true false
-	\item false false
+	\item true positive
+	\item false positive
+	\item true negative
+	\item false negative
 \end{itemize}
 
 \section{Preprocessing}
@@ -36,7 +36,7 @@ Some of the features used in the system gives better result with some preprocess
 
 \section{Postprocessing}
 \label{Postprocessing}
-At the end of the cascade when all the test data have been predicted there are some postprocessing before obtaining the final result. The reason for this is to remove some possible true false classifications. The false classifications are often distinctive since the true true classifications usually lay in clusters. Here a filter is applied which removes isolated true classifications. After that some morphological operations are done fill some possible holes in the areas where the codes are.
+At the end of the cascade when all the test data have been predicted there are some postprocessing before obtaining the final result. The reason for this is to remove some possible true false classifications. The false classifications are often distinctive since the true true classifications usually lay in clusters. Here a filter is applied which removes isolated true classifications. After that some morphological operations are done to fill some possible holes in the areas where the codes are.
 % Local Variables:
 % TeX-master: "main.tex"
 % End:

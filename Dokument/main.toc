@@ -4,17 +4,14 @@
 \select@language {english}
 \select@language {swedish}
 \select@language {english}
-\select@language {swedish}
-\select@language {english}
-\select@language {english}
-\select@language {english}
-\contentsline {chapter}{Notation}{xi}{section*.4}
 \contentsline {chapter}{\numberline {1}Introduction}{1}{chapter.1}
-\contentsline {chapter}{\numberline {2}Overview}{3}{chapter.2}
-\contentsline {section}{\numberline {2.1}System overview}{3}{section.2.1}
-\contentsline {chapter}{\numberline {3}Preprocessing of data}{5}{chapter.3}
+\contentsline {chapter}{\numberline {2}System overview}{3}{chapter.2}
+\contentsline {chapter}{\numberline {3}Data processing}{5}{chapter.3}
+\contentsline {section}{\numberline {3.1}The dataset}{5}{section.3.1}
+\contentsline {section}{\numberline {3.2}Preprocessing}{6}{section.3.2}
+\contentsline {section}{\numberline {3.3}Postprocessing}{6}{section.3.3}
 \contentsline {chapter}{\numberline {4}Machine learning methods}{7}{chapter.4}
-\contentsline {section}{\numberline {4.1}AdaBoost}{7}{section.4.1}
+\contentsline {section}{\numberline {4.1}Discrete AdaBoost}{7}{section.4.1}
 \contentsline {chapter}{\numberline {5}Features used to detect barcodes}{9}{chapter.5}
 \contentsline {section}{\numberline {5.1}Standard deviation}{9}{section.5.1}
 \contentsline {section}{\numberline {5.2}Structure tensor}{9}{section.5.2}
@@ -22,18 +19,18 @@
 \contentsline {section}{\numberline {5.4}Distance map}{10}{section.5.4}
 \contentsline {section}{\numberline {5.5}Local binary pattern}{10}{section.5.5}
 \contentsline {chapter}{\numberline {6}Cascade}{13}{chapter.6}
-\contentsline {chapter}{\numberline {7}Evaluation}{15}{chapter.7}
-\contentsline {section}{\numberline {7.1}Calculation of ground truth}{15}{section.7.1}
-\contentsline {section}{\numberline {7.2}Evaluation of features}{16}{section.7.2}
-\contentsline {subsection}{\numberline {7.2.1}Standard deviation}{16}{subsection.7.2.1}
-\contentsline {subsection}{\numberline {7.2.2}Structure tensor}{17}{subsection.7.2.2}
-\contentsline {subsection}{\numberline {7.2.3}Distance map}{17}{subsection.7.2.3}
-\contentsline {subsection}{\numberline {7.2.4}FAST corner detection}{18}{subsection.7.2.4}
-\contentsline {subsection}{\numberline {7.2.5}Local binary pattern}{18}{subsection.7.2.5}
-\contentsline {section}{\numberline {7.3}Evaluation of cascade}{19}{section.7.3}
-\contentsline {section}{\numberline {7.4}Conclusions}{22}{section.7.4}
-\contentsline {chapter}{\numberline {8}Further investigations}{25}{chapter.8}
-\contentsline {chapter}{Bibliography}{27}{chapter*.24}
+\contentsline {chapter}{\numberline {7}Evaluation}{17}{chapter.7}
+\contentsline {section}{\numberline {7.1}Calculation of ground truth}{17}{section.7.1}
+\contentsline {section}{\numberline {7.2}Evaluation of features}{18}{section.7.2}
+\contentsline {subsection}{\numberline {7.2.1}Standard deviation}{18}{subsection.7.2.1}
+\contentsline {subsection}{\numberline {7.2.2}Structure tensor}{19}{subsection.7.2.2}
+\contentsline {subsection}{\numberline {7.2.3}Distance map}{19}{subsection.7.2.3}
+\contentsline {subsection}{\numberline {7.2.4}FAST corner detection}{20}{subsection.7.2.4}
+\contentsline {subsection}{\numberline {7.2.5}Local binary pattern}{20}{subsection.7.2.5}
+\contentsline {section}{\numberline {7.3}Evaluation of cascade}{21}{section.7.3}
+\contentsline {section}{\numberline {7.4}Conclusions}{25}{section.7.4}
+\contentsline {chapter}{\numberline {8}Further investigations}{27}{chapter.8}
+\contentsline {chapter}{Bibliography}{29}{chapter*.25}
 \select@language {swedish}
 \select@language {english}
 \select@language {english}

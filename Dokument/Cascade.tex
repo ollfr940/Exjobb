@@ -36,7 +36,7 @@ Since the system needs to work in real time it needs to be fast. One effective w
 \label{Cascade}
 \end{figure}
 
-By testing different setups 
+By testing different setups the cascade in \ref{Cascade1} has given good results. Here the standard deviation is calculated first. This feature is not very heavy computationally and it also reduces the amount of data quite a lot. In the second step the structure tensor has been used since it is a good feature for separating 1D-codes from 2D-codes. In the last step the most computationally heavy methods are used.  
 
 \begin{figure}[H]
 \centering
@@ -77,5 +77,49 @@ By testing different setups
 
 \end{tikzpicture}
 \caption{Cascade model 1}
-\label{Cascade}
+\label{Cascade1}
+\end{figure}
+
+One alternative is to use the FAST corner detection in the second step instead of the structure tensor.  This is an other good way to separates 1D- and 2D-codes. This cascade model is illustrated in \ref{Cascade2}
+
+\begin{figure}[H]
+\centering
+\tikzstyle{block} = [rectangle, draw, fill=blue!20, 
+    text width=5em, text centered, rounded corners, minimum height=4em]
+\tikzstyle{datablock} = [rectangle, draw, fill=blue!20, 
+    text width=5em, text centered, minimum height=8em]
+\tikzstyle{line} = [draw, -latex']
+\tikzstyle{predict} = [text centered]
+
+\begin{tikzpicture}[node distance = 2.5cm, auto]
+    % Place nodes
+    \node [datablock] (test) {test data};
+    \node [block, right of=test] (std) {Standard deviation};
+    \node [block, right of=std] (fast) {FAST};
+  	\node [block, right of=fast] (LBP) {LBP};
+  	\node [block, below of=fast] (tensor) {Structure tensor};
+  	\node [block, right of=tensor] (dist) {Distance map};
+  	\node [predict, right of=dist] (1d) {1D-code};
+  	\node [predict, right of=LBP] (2d) {2D-code};
+  	\node [predict, below of=std] (false1) {false};
+  	\node [predict, above of=LBP] (false2) {false};
+  	\node [predict, below of=tensor] (false3) {false};
+  	\node [predict, below of=dist] (false4) {false};
+       
+    % Draw edges
+    \path [line] (test) -- (std);
+    \path [line] (std) -- (fast);
+    \path [line] (fast) -- (LBP);
+    \path [line] (fast) -- (tensor);
+    \path [line] (tensor) -- (dist);
+    \path [line] (std) -- (false1);
+    \path [line] (LBP) -- (false2);
+    \path [line] (tensor) -- (false3);
+    \path [line] (dist) -- (false4);
+    \path [line] (LBP) -- (2d);
+    \path [line] (dist) -- (1d);
+
+\end{tikzpicture}
+\caption{Cascade model 2}
+\label{Cascade2}
 \end{figure}

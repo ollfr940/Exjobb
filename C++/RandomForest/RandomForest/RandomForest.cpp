@@ -16,25 +16,25 @@ using namespace cv;
 vector<Point*> points;
 
 bool training = false;
-bool trainFromImage = true;
-bool dataFromRealImage = true;
-int numOfChars = 100;
+bool trainFromImage = false;
+bool dataFromRealImage = false;
+int numOfChars = 200;
 int numOfImages = 1;
-double desicionThres = 0.6;
-string charType = "numbers";
-string featureType = "points";
-int numOfClasses = 10;
+double desicionThres = 0.4;
+string charType = "uppercase";
+string featureType = "rects";
+int numOfClasses = 26;
 int charSize = 120;
 double fontSize = charSize/30;
 int imageWidth = 1200;
 int imageHeight = 1200;
-double angle = 0;
+double angle = 10;
 int charDiv = 15;
 int overlap = 8;
 int numOfPointPairs = 100000;
 
 //Random forest parameters
-int numOfForests = 20;
+int numOfForests = 17;
 int maxDepth = 10;
 int minSampleCount =numOfChars/100;
 float regressionAccuracy = 0.9;
@@ -42,7 +42,7 @@ bool useSurrugate = false;
 int maxCategories = 10;
 const float *priors;
 bool calcVarImportance = false;
-int nactiveVars = 100000;
+int nactiveVars = 0; //0 = square root of total number of features in every split
 int maxNumOfTreesInForest = 100;
 float forestAccuracy = 0;
 int termCritType = CV_TERMCRIT_ITER;
@@ -62,6 +62,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	if(training)
 	{
+		bool n = true;
 		if(argc == 1)
 		{
 			for(int i=0; i<numOfForests; i++)
@@ -71,7 +72,8 @@ int _tmain(int argc, _TCHAR* argv[])
 				cout << "Training forest nr: " << i << endl;
 				tree.train(trainingFeatures,CV_ROW_SAMPLE,trainingData.responses,Mat(),Mat(),Mat(),Mat(),
 				CvRTParams(maxDepth,minSampleCount,regressionAccuracy,useSurrugate,maxCategories,priors,calcVarImportance,nactiveVars,maxNumOfTreesInForest,forestAccuracy,termCritType));
-				tree.save(intToStr(i,numOfChars,numOfClasses,charType,featureType).c_str());
+				tree.save(intToStr(i,numOfChars,numOfClasses,maxDepth,maxNumOfTreesInForest,angle,charType,featureType,n).c_str());
+				n = false;
 			}
 		}
 		else if(argc == 3)
@@ -83,7 +85,8 @@ int _tmain(int argc, _TCHAR* argv[])
 				cout << "Training forest nr: " << i << endl;
 				tree.train(trainingFeatures,CV_ROW_SAMPLE,trainingData.responses,Mat(),Mat(),Mat(),Mat(),
 				CvRTParams(maxDepth,minSampleCount,regressionAccuracy,useSurrugate,maxCategories,priors,calcVarImportance,nactiveVars,maxNumOfTreesInForest,forestAccuracy,termCritType));
-				tree.save(intToStr(i,numOfChars,numOfClasses,charType,featureType).c_str());
+				tree.save(intToStr(i,numOfChars,numOfClasses,maxDepth,maxNumOfTreesInForest,angle,charType,featureType, n).c_str());
+				n = false;
 			}
 		}
 		else
@@ -95,7 +98,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 		if(dataFromRealImage)
 		{
-			im = imread("im.jpg");
+			im = imread("im.jpg",CV_LOAD_IMAGE_GRAYSCALE);
 			imageWidth = im.size().width/2;
 			imageHeight = im.size().height/2;
 			resize(im,image,Size(imageWidth,imageHeight));
@@ -132,7 +135,7 @@ int _tmain(int argc, _TCHAR* argv[])
 				break;
 		}
 
-		RandomCharacters trainingData = produceDataFromImage(boxVector,boxResponses,numOfChars,angle,imageCopy);
+		RandomCharacters trainingData = produceDataFromImage(boxVector,boxResponses,numOfChars,angle,imageCopy,dataFromRealImage);
 		Mat trainingFeatures = calcFeaturesTraining(trainingData,numOfPointPairs,featureType);
 
 		printf("Training....\n");
@@ -147,8 +150,8 @@ int _tmain(int argc, _TCHAR* argv[])
 		for(int i=0; i<numOfForests; i++)
 		{
 			forestVector.push_back(new CvRTrees);
-			cout << "loading: " << intToStr(i,numOfChars,numOfClasses,charType,featureType) << endl;
-			forestVector[i]->load(intToStr(i,numOfChars,numOfClasses,charType,featureType).c_str());
+			cout << "loading: " << intToStr(i,numOfChars,numOfClasses,maxDepth,maxNumOfTreesInForest,angle,charType,featureType,false) << endl;
+			forestVector[i]->load(intToStr(i,numOfChars,numOfClasses,maxDepth,maxNumOfTreesInForest,angle,charType,featureType,false).c_str());
 		}
 
 		CSize charSizeXY = loadSizeFromFile("charSize.txt");

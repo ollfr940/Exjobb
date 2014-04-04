@@ -1,9 +1,11 @@
-\chapter{Machine learning methods}
-\label{sec:Machine learning methods}
+\chapter{Machine learning}
+\label{sec:Machine learning}
 
+\section{Classification}
+\label{classification}
 \section{Discrete AdaBoost}
 \label{sec:Discret AdaBoost}
-For detection of barecodes the machine learning method discrete AdaBoost has been used which is described in \citep{Friedman:2000}. The algorithm is described in \ref{AdaBoost}. The basic idea is to train a number of weak classifiers which during the testing will be combined to a strong classifier. To each data in the training dataset there are corresponding weights which are equal for all data at the beginning. The weak classifiers are trained sequentially and after each step the weights are adjusted depending if they were correctly or incorrectly classified.
+For detection of barecodes the machine learning method discrete AdaBoost has been used which is described in \citep{Friedman:2000}. The algorithm is described in \ref{AdaBoost}. The basic idea is to train a number of weak classifiers which during the testing will be combined to a strong classifier. To each data in the training dataset there are corresponding weights which are equal for all data at the beginning. The weak classifiers are trained sequentially and after each step the weights are adjusted depending if they were correctly or incorrectly classified. In each iteration all the training data are used.
 
 \begin{figure} [H]
 \line(1,0){250} \newline
@@ -29,7 +31,7 @@ $\text{For } t=1,...,T:$
 \end{itemize}
 Final strong classifier
 \begin{center}
-	$ H(x) = sign(\sum_{t=1}^{T} {\alpha_th_t(x)}-\phi)$
+	$ H(x) = sign(\sum_{t=1}^{T} {\alpha_th_t(x)}-\varphi)$
 \end{center}
 \line(1,0){250}
 \caption{Algorithm for discrete AdaBoost}
@@ -37,7 +39,21 @@ Final strong classifier
 \end{figure}
 
 
-The split functions may consist of a number of different parameters. The most basic function, which has been used here, only has one parameter, a threshold. The function search for a threshold in one dimension at a time and choose the one whish best separates the data. 
+The split functions may consist of a number of different parameters. The most basic function, which has been used here, only has one parameter, a threshold. The function search for a threshold in one dimension at a time and choose the one which best separates the data.
+
+\section{Discrete Random forest}
+\label{sec:Discret Random forest}
+Random forest is described in \citep{Criministi:2011}. The algorithm creates decision trees which in the end are combined to a strong classifier. For each tree only a randomly chosen subset of the training data is used. This is in contrast to the AdaBoost algorithm where all training data are used in each iteration. The Ranom forest can be used for classification with more than two classes which is one of the advantage to AdaBoost. This makes it a lot more suitable for character recognition.
+
+During training the trees are created one at a time with a random subset of training data. In each split node in a tree it is possible to use the whole feature vector or just a part of it. This depends on the amount of features. For a problem with a large amount of features it is common to chose a specific number of features randomly for every split.  
+
+\begin{figure}[H]
+\centering
+	\includegraphics[scale=0.5]{RandomForest}
+	\caption{Image illustrates testing using Random forest. Source: \citep{Criministri:2011}}
+	\label{FAST}
+\end{figure}
+ 
 % Local Variables:
 % TeX-master: "main.tex"
 % End:

@@ -1,5 +1,8 @@
 \chapter{System overview}
 \label{sec:System overview}
+
+\section{Borcode detection overview}
+\label{sec:Barcode detection overview}
 The system for detection of barcodes is basically divided in two parts. The data consist of a big amount of images which contain 1D- and 2D-codes. Each image has a corresponding ground truth where the parts of the image containing codes has been labeled as "true" and the rest as "false". The first part of the system involves the training using machine learning which produces a classifier. It consists of the following steps.
 
 \begin{itemize}
@@ -52,7 +55,43 @@ An overview of the system can be seen in \ref{system}.
 \label{system}
 \end{figure}
 
+\section{OCR overview}
+\label{sec:OCR overview}
 
+%Flow chart
+\begin{figure}[H]
+\centering
+\tikzstyle{largeblock} = [rectangle, draw, fill=blue!20, 
+    text width=10em, text centered, rounded corners, minimum height=5em]
+\tikzstyle{block} = [rectangle, draw, fill=blue!20, 
+    text width=6em, text centered, rounded corners, minimum height=4em]
+\tikzstyle{line} = [draw, -latex']
+\tikzstyle{cloud} = [draw, ellipse,fill=red!20, node distance=3cm,
+    minimum height=2em]
+ 
+\begin{tikzpicture}[node distance = 2.5cm, auto]
+    % Place nodes
+    \node [cloud] (trainingImage) {image for training};
+    \node [largeblock, below of=trainingImage] (trainingData) {produce training data};
+    \node [largeblock, below of=trainingData] (machine) {training using Random forest};
+    \node [block, below of=machine] (classifier) {classification forest};
+    \node [cloud, right of=trainingImage, node distance=4cm] (test) {test data};
+    \node [block, below of=test, node distance=7.5cm] (cascade) {cascade};
+    \node [block, below of=cascade] (prediction) {prediction};
+    
+    
+    % Draw edges
+    \path [line] (trainingImage) -- (trainingData);
+    \path [line] (trainingData) -- (machine);
+    \path [line] (machine) -- (classifier);
+    \path [line] (classifier) -- (cascade);
+    \path [line] (test) -- (cascade);
+    \path [line] (cascade) -- (prediction);
+
+\end{tikzpicture}
+\caption{Overview of the system for OCR}
+\label{system OCR}
+\end{figure}
 
 
 % Local Variables:

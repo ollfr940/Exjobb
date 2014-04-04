@@ -4,6 +4,7 @@ There are a lot of different 2D-codes that are currently used. The system has so
 
 The system could also be tested on a more complicated data set. If one would use a data set that contains more details in the background the system would probably detect a lot more false tiles. However many of the data sets that are available look very similar to the one that has been used.
 
-To speed up the system even further one possibility could be to train a cascade for the local binary pattern alone. Since the LBP has 256 features it is likely that some of these features are more common than others for 2D-codes. If the system is trained to use these features in a certain order it would probably speed up the system. However since the LBP features have been used in the last step of the cascade and the amount of data already has been reduced a lot it is uncertain if this will make much impact.
+Since there are not many details in the background in the current dataset the amount of data is reduced a lot when using standard deviation in the first step of the cascade. A dataset with more details in the background would probably lead to a much slower system. It would also probably detect more false tiles. The amount of details in the background is therefore very critical both for the accuracy and the speed.
 
-Postprocessing 
+To speed up the system even further one possibility could be to train a cascade for the local binary pattern alone. Since the LBP has 256 features it is likely that some of these features are more common than others for 2D-codes. If the system is trained to use these features in a certain order it would probably speed up the system. However since the LBP features have been used in the last step of the cascade and the amount of data already has been reduced a lot it is uncertain if this will make much impact.
+ 

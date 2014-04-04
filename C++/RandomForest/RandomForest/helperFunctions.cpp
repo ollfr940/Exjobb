@@ -18,24 +18,31 @@ int calcRectFiltNum(int charSizeX, int charSizeY)
 	return filtNum*17;
 }
 
-string intToStr(int i, int numOfChars,int numOfClasses, string charType, string featureType)
+string intToStr(int i, int numOfChars,int numOfClasses, int depth, int treeNum, int angle, string charType, string featureType, bool n)
 {
-	stringstream s1;
-	stringstream s2;
-	stringstream s3;
+	stringstream s1, s2, s3, s4, s5, s6;
 	string ret1 = "";
 	string ret2 = "";
 	string ret3 = "";
+	string ret4 = "";
+	string ret5 = "";
+	string ret6 = "";
 	string name;
+	string mapName;
 
-	s1 << numOfClasses;
-	s1 >> ret1;
-	s2 << numOfChars;
-	s2 >> ret2;
-	s3 << i;
-	s3 >> ret3;
-	name = charType + "_" + featureType + "_NumOfData " + ret1 + "x" + ret2 + "_" + ret3 + ".xml";
-
+	s1 << numOfClasses; s1 >> ret1;
+	s2 << numOfChars; s2 >> ret2;
+	s3 << i; s3 >> ret3;
+	s4 << depth; s4 >> ret4;
+	s5 << treeNum; s5 >> ret5;
+	s6 << angle; s6 >> ret6;
+	mapName = "C:\\Users\\tfridol\\git\\Exjobb\\C++\\RandomForest\\RandomForest\\" + charType + "_" + featureType + "_NumOfData" + 
+		ret1 + "x" + ret2 + "_depth" + ret4 + "_treeNum" + ret5 + "_angle" + ret6;
+	if(n)
+	CreateDirectoryA(mapName.c_str(),NULL);
+	//name = mapName + "\\" +"Forest" + "_" + ret3 + ".xml";
+	//name = charType + "_" + featureType + "_NumOfData " + ret1 + "x" + ret2 + "_" + ret3 + ".xml";
+	name = "C:\\Users\\tfridol\\git\\Exjobb\\C++\\RandomForest\\RandomForest\\uppercase_rects_NumOfData 5200\\uppercase_NumOfData 5200_" + ret3 + ".xml";
 	return name;
 }
 
@@ -165,6 +172,11 @@ void rotate(Mat& src, double angle,int imageSizex, int imageSizey, double scale)
 	Mat transformation = getRotationMatrix2D(pt, angle, scale);
 
 	warpAffine(src, src, transformation, Size(imageSizex*(int)scale, imageSizey*(int)scale),0,cv::BORDER_CONSTANT,Scalar(255,255,255));
+}
+
+void preProcessRect(Mat& image, double threshold)
+{
+	cv::threshold(image, image, threshold, 255,0);
 }
 
 RandomCharacters produceProxData(string type, int numOfClasses, int charSize, double fontSize)

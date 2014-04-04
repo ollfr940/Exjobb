@@ -1,6 +1,7 @@
 #include <iostream>
 #include<fstream>
 #include<cstring>
+#include <Windows.h>
 #include <opencv/cv.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -25,6 +26,7 @@ void mouseCallback( int event, int x, int y, int flags, void* param );
 void draw_box(cv::Mat * img, cv::Rect rect);
 void writeSizeToFile(int imSizeX, int imSizeY, const char* filename);
 CSize loadSizeFromFile(const char* filename);
-std::string intToStr(int i, int numOfChars,int numOfClasses, std::string charType, std::string featureType);
+std::string intToStr(int i, int numOfChars,int numOfClasses, int depth, int treeNum, int angle, std::string charType, std::string featureType, bool n);
+void preProcessRect(cv::Mat& image, double threshold);
 
 #endif

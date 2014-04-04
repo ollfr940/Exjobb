@@ -8,7 +8,7 @@ To get a measure of the accuracy of the system the number of true detections and
  	\item Size of the tiles
  	\item Use of overlapping tiles or not
  	\item Use of down sampling
- 	\item $\epsilon$ from
+ 	\item $\varphi$ from the algorithm in figure \ref{AdaBoost}
  	\item Use of Laplace filtering 
  \end{itemize}
 
@@ -36,7 +36,7 @@ In the table below some tile sizes have been tried out with different down sampl
 
 \section{Evaluation of features}
 \label{sec:Evaluation of features}
-Here is an evaluation of each feature that are used in the cascade. The objective is to keep as many true tiles as possible in each step of the cascade and in the same time reduce the amount of date as much as possible. In this evaluation the objective has been to preserve at least 98\% of the true tiles in each step. Here different tile sizes and different amount of down sampling have been tried and best value of $\epsilon$ has been calculated to preserve 98\% of the true tiles and as few false tiles as possible. Here only cases which gave a good result in the evaluation of the ground truth above are tested. 
+Here is an evaluation of each feature that are used in the cascade. The objective is to keep as many true tiles as possible in each step of the cascade and in the same time reduce the amount of date as much as possible. In this evaluation the objective has been to preserve at least 98\% of the true tiles in each step. Here different tile sizes and different amount of down sampling have been tried and best value of $\varphi$ has been calculated to preserve 98\% of the true tiles and as few false tiles as possible. Here only cases which gave a good result in the evaluation of the ground truth above are tested. 
 
 \subsection{Standard deviation}
 When using standard deviation the images have been preprocessed with Laplace filtering and no overlapping tiles. It has been trained on both 1D- and 2D-codes. 
@@ -52,7 +52,7 @@ When using standard deviation the images have been preprocessed with Laplace fil
      64x64 & 3 &     &			\\ \hline
      \end{tabular}
 \end{center}
-\caption{Lowest value of $\epsilon$ that keeps at least 98\% of the true tiles when using standard deviation}
+\caption{Lowest value of $\varphi$ that keeps at least 98\% of the true tiles when using standard deviation}
 \end{table}
 
 \begin{table}[H]
@@ -83,7 +83,7 @@ When using structure tensor the images have been preprocessed with Laplace filte
      64x64 & 1 &     &					\\ \hline
      \end{tabular}
 \end{center}
-\caption{Lowest value of $\epsilon$ that keeps at least 98\% of the true tiles when using structure tensor}
+\caption{Lowest value of $\varphi$ that keeps at least 98\% of the true tiles when using structure tensor}
 \end{table}
 
 \begin{table}[H]
@@ -114,7 +114,7 @@ The distance map is trained only with 1D-codes and without Laplace filtering.
      64x64 & 1.2 &     &		\\ \hline
      \end{tabular}
 \end{center}
-\caption{Lowest value of $\epsilon$ that keeps at least 98\% of the true tiles when using distance map}
+\caption{Lowest value of $\varphi$ that keeps at least 98\% of the true tiles when using distance map}
 \end{table}
 
 \begin{table}[H]
@@ -143,10 +143,10 @@ The FAST corner detection feature is trained only with 2D-codes and without Lapl
    	 24x24 & 1.5 & 4 & 3 		\\ \hline
      32x32 & 3 & 4 & 			\\ \hline
      48x48 & 2.2 &     &  		\\ \hline
-     64x64 & 3. &     &			\\ \hline
+     64x64 & 3 &     &			\\ \hline
      \end{tabular}
 \end{center}
-\caption{Lowest value of $\epsilon$ that keeps at least 98\% of the true tiles when using FAST corner detection}
+\caption{Lowest value of $\varphi$ that keeps at least 98\% of the true tiles when using FAST corner detection}
 \end{table}
 
 \begin{table}[H]
@@ -177,7 +177,7 @@ The LBP feature is trained only with 2D-codes and without Laplace filtering. The
      64x64 & 2 &     &			\\ \hline
      \end{tabular}
 \end{center}
-\caption{Lowest value of $\epsilon$ that keeps at least 98\% of the true tiles when using LBP}
+\caption{Lowest value of $\varphi$ that keeps at least 98\% of the true tiles when using LBP}
 \end{table}
 
 
@@ -193,7 +193,7 @@ Here are some conclusions that can be drawn from the evaluation of the features 
 \item The cascade will be a lot faster with down sampling with 2 and tile sizes 24x24 and 32x32. This is because the amount of false tiles when using standard deviation are very low.
 \end{itemize}
 
-From these conclusions the evaluation of the cascade will be done for four different cases regarding the tile size, the down sampling and the overlap of the tiles. Also the cascades has been evaluated for the two different variants which was described in \ref{sec:Cascade} have been evaluated. 
+From these conclusions the evaluation of the cascade will be done for four different cases regarding the tile size, the down sampling and the overlap of the tiles. Also the cascades has been evaluated for the two different variants which was described in \ref{sec:Cascade}. Here is the result from cascade 1.
 
 \begin{table}[H]
 \begin{center}
@@ -211,9 +211,30 @@ From these conclusions the evaluation of the cascade will be done for four diffe
      & 631 & 1D: 0.96 \newline 2D: 0.93 & 1D: 0.35 \newline 2D: 0.93		 \\ \hline
      \end{tabular}
 \end{center}
-\caption{Result from evaluation of cascade}
+\caption{Result from evaluation of cascade 1}
 \end{table}
 
+Here is the evaluation of cascade 2.
+\begin{table}[H]
+\begin{center}
+     \begin{tabular}{ | p{3cm} | l | p{3cm} | p{2cm}|}
+     \hline
+      	& ms/image & true detections in percent & false tiles \newline per image \\ \hline
+   	 tile size 24x24 \newline down sampling 2 \newline overlap 1 
+   	 & 74 & 1D: 96 \newline 2D: 95 & 1D: 0.5 \newline 2D: 0.12 				\\ \hline
+     tile size 32x32 \newline down sampling 2 \newline overlap 2 
+     & 210 & 1D: 97 \newline 2D: 94 & 1D: 0.18 \newline 2D: 0				\\ \hline
+     tile size 48x48 \newline down sampling 1 \newline overlap 2 
+     & 390    & 1D: 96 \newline 2D: 94.5 & 1D: 0.02 \newline 2D: 0.097
+     \\ \hline
+     tile size 64x64 \newline down sampling 1 \newline overlap 3 
+     & 630 & 1D: 0.96 \newline 2D: 0.93 & 1D: 0.18 \newline 2D: 0		 \\ \hline
+     \end{tabular}
+\end{center}
+\caption{Result from evaluation of cascade 2}
+\end{table}
+
+Bellow is the result from the first two tests of cascade 1 (first two row in table 7.11).
 \begin{figure}[H]
 \centering
 	\includegraphics[scale=0.5]{Result24x24_1D}
@@ -238,26 +259,26 @@ From these conclusions the evaluation of the cascade will be done for four diffe
 \begin{figure}[H]
 \centering
 	\includegraphics[scale=0.5]{Result32x32_2D}
-	\caption{Result from evaluation of cascade using tile size 24x24, down sampling 2, and no overlap}
-	\label{Result24x24}
+	\caption{Result for 2D-codes from evaluation of cascade using tile size 24x24, down sampling 2, and no overlap}
+	\label{Result24x24_2D}
 \end{figure}
 
 \begin{figure}[H]
 \centering
 	\includegraphics[scale=0.25]{Result24x24}
-	\caption{Result for 2D-codes from evaluation of cascade using tile size 32x32, down sampling 2, and overlap 2}
-	\label{Result32x32_2D}
+	\caption{Result from evaluation of cascade using tile size 32x32, down sampling 2, and overlap 2}
+	\label{Result32x32}
 \end{figure}
 
 \section{Conclusions}
 \label{sec:Conclusions}
 The two variants of the cascade gave rather similar results. Both the structure tensor and the FAST corner detection are rather good at distinguish between 1D- and 2D-codes.
 
-The first two cases (the two first rows in table 7.11) gives overall better result, especially regarding the speed. Which one of them that is best depend depend of what is required of the system, regarding speed and accuracy.
+The first two cases (the two first rows in table 7.11 and table 7.12) gives overall better result, especially regarding the speed. Which one of them that is best depend depend of what is required of the system, regarding speed and accuracy.
 
 One alternative is to omit the distance map feature in the cascade and only use standard deviation and structure tensor for detection of 1D-codes. The result is still rather good, the amount of true detections is even higher but the amount of false tiles will increase.
 
-The amount of true tiles detected can in some cases seem a bit weak, especially for 2D-codes. In the graphs one can see that in some images the there are no detections at all. This is the case when the codes are at the border of the image and only a small part are inside. Since in this case only a few tiles will cover the codes there is a big chance that these will be lost in the post-processing. The alternative is to reduce the amount of post-processing but this will instead lead to more false tiles.  
+The amount of true tiles detected can in some cases seem a bit weak, especially for 2D-codes. In the upper graph in \ref{Result24x24_2D} one can see that in one image there are no detections at all. This is the case when the codes are at the border of the image and only a small part are inside. Since in this case only a few tiles will cover the codes there is a big chance that these will be lost in the post-processing. The alternative is to reduce the amount of post-processing but this will instead lead to more false tiles.  
 
 % Local Variables:
 % TeX-master: "main.tex"

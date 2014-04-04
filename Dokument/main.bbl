@@ -1,15 +1,37 @@
-\begin{thebibliography}{4}
+\begin{thebibliography}{8}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
   \providecommand{\doi}[1]{doi: #1}\else
   \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
 
+\bibitem[A.~Criminisi and Konukoglu(2011)]{Criministi:2011}
+J.~Shotton A.~Criminisi and E.~Konukoglu.
+\newblock Decision forests for classification, regression, density estimation,
+  manifold learning and semi-supervised learning.
+\newblock \emph{Microsoft Research Cambridge}, 2011.
+
+\bibitem[J.~Friedman(2000)]{Friedman:2000}
+R.~Tibshiani J.~Friedman, T.~Hastie.
+\newblock Additive logistic regression: A statistical view of boosting.
+\newblock \emph{Stanford University}, 2000.
+
+\bibitem[M.~Nenad()]{Nenad}
+S.~Igor J. Ahlberg R.~Forchheimer M.~Nenad, F.~Miroslav.
+\newblock Localizing facial landmark points with pixel intensity comparisons
+  organized in decision trees.
+\newblock \emph{University of Zagreb, Linköping University}.
+
 \bibitem[P.~Bodnar()]{Bodnar}
 L.~Nyul P.~Bodnar.
 \newblock Barcode detection with uniform prtitioning and distance
   tranformation.
 \newblock \emph{Univerity of Szeged}.
+
+\bibitem[P.~Viola(2001)]{Viola:2010}
+M.~Jones P.~Viola.
+\newblock Rapid object detection using a boosted cascade of simple features.
+\newblock \emph{Cambridge}, 2001.
 
 \bibitem[Pietikainen(2010)]{Pietikainen:2010}
 M.~Pietikainen.

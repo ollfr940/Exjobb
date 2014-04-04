@@ -92,9 +92,9 @@ void calcPointPairsFeaturesTile(Mat& tile, Mat& featureMat, Mat& pointVector, in
 		y1 = pointVector.at<int>(i,1);
 		x2 = pointVector.at<int>(i,2);
 		y2 = pointVector.at<int>(i,3);
-		if(tile.at<uchar>(x1,y1) > tile.at<uchar>(x2,y2))
+		if(tile.at<uchar>(y1,x1) > tile.at<uchar>(y2,x2))
 			featureMat.at<float>(im, i) = 1;
-		else if(tile.at<uchar>(x1,y1) < tile.at<uchar>(x2,y2))
+		else if(tile.at<uchar>(y1,x1) < tile.at<uchar>(y2,x2))
 			featureMat.at<float>(im,i) = -1;
 
 		//if(featureMat.at<float>(im,i) != 0)

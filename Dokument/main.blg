@@ -1,8 +1,5 @@
 This is BibTeX, Version 0.99dThe top-level auxiliary file: main.aux
 The style file: plainnat.bst
-A level-1 auxiliary file: tack.aux
-A level-1 auxiliary file: notation.aux
-A level-1 auxiliary file: introduction.aux
 A level-1 auxiliary file: Overview.aux
 A level-1 auxiliary file: Preprocessing.aux
 A level-1 auxiliary file: MachineLearning.aux
@@ -11,11 +8,32 @@ A level-1 auxiliary file: Cascade.aux
 A level-1 auxiliary file: Evaluation.aux
 A level-1 auxiliary file: FurtherInvestigations.aux
 Database file #1: References.bib
-Warning--I didn't find a database entry for "oetikerPHS:2004"
-Warning--I didn't find a database entry for "lamport:1994"
-Warning--I didn't find a database entry for "companion:2004"
-Warning--I didn't find a database entry for "companionG:1997"
-Warning--I didn't find a database entry for "companion:1994"
+Name 1 in "A. Criminisi, J. Shotton, and E. Konukoglu" has a comma at the end for entry Criministi:2011
+while executing---line 1347 of file plainnat.bst
+Name 1 in "A. Criminisi, J. Shotton, and E. Konukoglu" has a comma at the end for entry Criministi:2011
+while executing---line 1347 of file plainnat.bst
+Too many commas in name 1 of "M. Nenad, F. Miroslav, S. Igor, J. Ahlberg, R. Forchheimer" for entry Nenad
+while executing---line 1347 of file plainnat.bst
+Too many commas in name 1 of "M. Nenad, F. Miroslav, S. Igor, J. Ahlberg, R. Forchheimer" for entry Nenad
+while executing---line 1347 of file plainnat.bst
+Too many commas in name 1 of "M. Nenad, F. Miroslav, S. Igor, J. Ahlberg, R. Forchheimer" for entry Nenad
+while executing---line 1347 of file plainnat.bst
+Too many commas in name 1 of "M. Nenad, F. Miroslav, S. Igor, J. Ahlberg, R. Forchheimer" for entry Nenad
+while executing---line 1347 of file plainnat.bst
+Name 1 in "A. Criminisi, J. Shotton, and E. Konukoglu" has a comma at the end for entry Criministi:2011
+while executing---line 1429 of file plainnat.bst
+Name 1 in "A. Criminisi, J. Shotton, and E. Konukoglu" has a comma at the end for entry Criministi:2011
+while executing---line 1429 of file plainnat.bst
+Too many commas in name 1 of "M. Nenad, F. Miroslav, S. Igor, J. Ahlberg, R. Forchheimer" for entry Nenad
+while executing---line 1429 of file plainnat.bst
+Too many commas in name 1 of "M. Nenad, F. Miroslav, S. Igor, J. Ahlberg, R. Forchheimer" for entry Nenad
+while executing---line 1429 of file plainnat.bst
+Too many commas in name 1 of "M. Nenad, F. Miroslav, S. Igor, J. Ahlberg, R. Forchheimer" for entry Nenad
+while executing---line 1429 of file plainnat.bst
+Too many commas in name 1 of "M. Nenad, F. Miroslav, S. Igor, J. Ahlberg, R. Forchheimer" for entry Nenad
+while executing---line 1429 of file plainnat.bst
+Warning--empty year in Nenad
+Warning--empty year in Nenad
 Warning--empty year in Bodnar
 Warning--empty year in Bodnar
-(There were 7 warnings)
+(There were 12 error messages)

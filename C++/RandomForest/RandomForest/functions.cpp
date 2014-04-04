@@ -55,30 +55,34 @@ RandomCharacters produceData(int numOfChars, int charSize, string type,double an
 	return chars;
 }
 
-RandomCharacters produceDataFromImage(vector<Rect*> boxVec, vector<char> boxRes, int numOfCharacters, double angle, Mat& image)
+RandomCharacters produceDataFromImage(vector<Rect*> boxVec, vector<char> boxRes, int numOfCharacters, double angle, Mat& image, bool useRealIm)
 {
 	printf("Produce data from image....\n\n");
 	uint64 initValue = time(0);
 	RNG rng(initValue);
 	RandomCharacters chars;
-	Mat* imRect, imCopy, imCopyTrans;
-	int width, height, x, y;
+	Mat* imRect,imCopy, imCopyTrans;
+	int x, y;
+	int	width = boxVector[0]->width;
+	int	height = boxVector[0]->height;
 	double randomAngle, scale = 1.0;
 	chars.responses = Mat::zeros(boxVector.size()*numOfCharacters,1,CV_32SC1);
 
 	for(int i=0; i<boxVector.size(); i++)
 	{
-		width = boxVector[i]->width;
-		height = boxVector[i]->height;
 		imCopy = image(*boxVector[i]).clone();
+
+		if(useRealIm)
+			preProcessRect(imCopy,128);
+		cout << imCopy.channels();
 
 		for(int j=0; j<numOfCharacters; j++)
 		{
 			imRect = new Mat(Mat::zeros(height,width,CV_8UC1));
 			//imCopyTrans = Mat::zeros(width,height,CV_8UC1);
 			add(*imRect,255,*imRect);
-			x = rng.uniform(-width/3, width/3);
-			y = rng.uniform(-height/3, height/3);
+			x = rng.uniform(-width/5, width/5);
+			y = rng.uniform(-height/5, height/5);
 
 			if(x >= 0 && y >= 0)
 				imCopy(Rect(x,y, width-x, height-y)).copyTo((*imRect)(Rect(0,0,width-x, height-y))); 
@@ -218,31 +222,6 @@ Mat createRectFeatures(RandomCharacters trainingData)
 	return featureMat;
 }*/
 
-/*Mat createRandomPointPairsFeatures(RandomCharacters trainingData, int numOfPointPairs)
-{
-	printf("Create random point pairs features....\n\n");
-	CalcRandomPointPairsSample pointPairs;
-	Mat pointPairVector = Mat::zeros(numOfPointPairs,4,CV_32FC1);
-	int width = trainingData.randChars[0]->size().width;
-	int height = trainingData.randChars[0]->size().height;
-	int numOfCharacters = (int)trainingData.randChars.size();
-	Mat featureMat = Mat::zeros(numOfCharacters,numOfPointPairs,CV_32FC1);
-	//uint64 initValue = time(0);
-	cv::RNG rng(0);
-	for(int i=0; i<numOfPointPairs; i++)
-	{
-		pointPairVector.at<int>(i,0) = rng.uniform(0,width);
-		pointPairVector.at<int>(i,1) = rng.uniform(0,height);
-		pointPairVector.at<int>(i,2) = rng.uniform(0,width);
-		pointPairVector.at<int>(i,3) = rng.uniform(0,height);
-	}
-	
-	for(int im=0; im<numOfCharacters; im++)
-	{ 
-		pointPairs.operator()(pointPairVector, featureMat, trainingData.randChars[im], numOfPointPairs, im);
-	}
-	return featureMat;
-}*/
 
 /*void evaluateRect(CvRTrees& tree, int testNum, int imageSize,string type, double angle)
 {
@@ -446,101 +425,7 @@ vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> fo
 	std::cout << "Average time per image: " << (float)(stop - start)/((float)imNum)/1000 << std::endl << std::endl; 
 	return predictions;
 }
-/*
-vector<Mat*> predictImagesRandomPoints(RandomCharactersImages& randIms, vector<CvRTrees*> forestVector,int imNum, int imageSize, int charSizeX, int charSizeY, int overlap, int numOfTrees,double desicionThres, string type, int numOfPointPairs)
-{
-	printf("Detecting characters in images....\n\n");
-	//CalcRandomPointPairsSample pointPairs;
-	DWORD start, stop;
-	int xPos, yPos, predPosx, predPosy;
-	Mat imRect, integralRect; //,imRectHalfUp,imRectHalfDown, imRectHalfMiddle;
-	int imRectUp,imRectDown, imRectMiddleHor, imRectMiddleVert;
-	vector<Mat*> predictions;
-	Mat* pred;
-	char proxIndx;
-	int tileNumX = imageSize/charSizeX*overlap - (overlap-1);
-	int tileNumY = imageSize/charSizeY*overlap - (overlap-1);
-	Mat featureMat = Mat::zeros(1,numOfPointPairs,CV_32FC1);
-	Mat treePred;
-	CvForestTree* tree;
-	double minVal, maxVal;
-	int minIndx[2] = {0,0};
-	int maxIndx[2] = {0,0};
-	int numOfForests = (int)forestVector.size();
-	Mat pointPairVector = Mat::zeros(numOfPointPairs,4,CV_32FC1);
 
-	//uint64 initValue = time(0);
-	cv::RNG rng(0);
-	for(int i=0; i<numOfPointPairs; i++)
-	{
-		pointPairVector.at<int>(i,0) = rng.uniform(0,charSizeX);
-		pointPairVector.at<int>(i,1) = rng.uniform(0,charSizeY);
-		pointPairVector.at<int>(i,2) = rng.uniform(0,charSizeX);
-		pointPairVector.at<int>(i,3) = rng.uniform(0,charSizeY);
-	}
-	
-	start = GetTickCount();
-	for(int im=0; im<imNum; im++)
-	{
-		pred = new Mat(Mat::zeros(tileNumX,tileNumY, CV_8UC1));
-		xPos = 0;
-		yPos = 0;
-		predPosx = 0;
-		predPosy = 0;
-		while(yPos < imageSize-charSizeY && predPosy < tileNumY)
-		{
-			while(xPos < imageSize-charSizeX && predPosx < tileNumX)
-			{
-				int rectArea = charSizeX*charSizeY*255;
-				imRect = (*randIms.randChars[im])(Rect(xPos,yPos,charSizeX,charSizeY));
-				imRectUp = sum(imRect(Rect(0,0,charSizeX,charSizeY/2)))(0);
-				imRectDown = sum(imRect(Rect(0,charSizeY/2,charSizeX,charSizeY/2)))(0);
-				imRectMiddleHor = sum(imRect(Rect(0,charSizeY*7/16,charSizeX,charSizeY/8)))(0);
-				imRectMiddleVert = sum(imRect(Rect(charSizeX*7/16,0,charSizeX/8, charSizeY)))(0);
-
-				if(imRectUp < rectArea/2 && imRectDown < rectArea/2 && imRectMiddleHor < rectArea/8 && imRectMiddleVert < rectArea/8)
-				{
-					//pointPairs.operator()(pointPairVector,featureMat,&imRect,numOfPointPairs,0);
-					calcPointPairsFeaturesTile(imRect,featureMat,pointPairVector,numOfPointPairs,0);
-					treePred = Mat::zeros(256,1, CV_32SC1);
-
-					for(int f=0; f<numOfForests; f++)
-					{
-						for(int t=0; t<(int)numOfTrees; t++)
-						{
-							tree = forestVector[f]->get_tree(t);
-							treePred.at<int>(tree->predict(featureMat)->value,0)++;
-						}
-					}
-					cv::minMaxIdx(treePred,&minVal,&maxVal,minIndx,maxIndx);
-					cout << *maxIndx << endl;
-					if(maxVal > numOfTrees*numOfForests*desicionThres)
-						pred->at<uchar>(predPosx,predPosy) = *maxIndx;
-						
-
-
-					xPos += charSizeX/overlap;
-					predPosx++;
-					//yPos += charSize/overlap;
-				}
-				else
-				{
-					xPos += charSizeX/overlap; // charSize;
-					predPosx++; // += overlap;
-					//yPos += charSize;
-				}
-			}
-			predPosx = 0;
-			predPosy++;
-			xPos = 0;
-			yPos += charSizeY/overlap;
-		}
-		predictions.push_back(pred);
-	}
-	stop = GetTickCount();
-	std::cout << "Average time per image: " << (float)(stop - start)/((float)imNum)/1000 << std::endl << std::endl; 
-	return predictions;
-}*/
 
 void evaluateResult(vector<Mat*> predictions, RandomCharactersImages& randIms,  int imageWidth, int imageHeigth, int charSizeX, int charSizeY, int numOfImages, int overlap)
 {
