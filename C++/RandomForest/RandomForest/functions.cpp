@@ -223,17 +223,77 @@ Mat createRectFeatures(RandomCharacters trainingData)
 }*/
 
 
-/*void evaluateRect(CvRTrees& tree, int testNum, int imageSize,string type, double angle)
+void evaluateIm(vector<CvRTrees*> forestVector, int testNum, int imageSize,string type, string featureType,int charDiv,int fontSize, int numOfClasses, int numOfPoints, double angle, int numOfTrees, double threshold)
 {
-RandomCharacters testData = produceData(testNum,imageSize,type,angle);
-Mat testFeatures = createRectFeatures(testData,testNum, imageSize);
+	RandomCharacters testData = produceData(testNum,imageSize,type,angle,charDiv,fontSize,numOfClasses);
+	//Mat testFeatures = calcFeaturesTraining(testData,numOfPoints,featureType);
+	int truePred = 0;
+	double trueConf = 0;
+	int numOfForests = (int)forestVector.size();
+	CvForestTree* tree;
+	Mat* pred, treePred;
+	int minIndx[2] = {0,0};
+	int maxIndx[2] = {0,0};
+	double minVal, maxVal;
 
-for(int im=0; im<testNum; im++)
-{
-cout << "Real value: " << (char)testData.responses.at<int>(im,0) << endl;
-cout << "Predicted value: " << (char)tree.predict(testFeatures.row(im)) << endl << endl;
+	Mat pointPairVector = Mat::zeros(numOfPoints,4,CV_32SC1);
+	cv::RNG rng(0);
+	int distThreshold = 20;
+	int x1, x2, y1, y2;
+	for(int i=0; i<numOfPoints; i++)
+	{ 
+		x1 = 0;
+		y1 = 0;
+		x2 = 0;
+		y2 = 0;
+
+		while(abs(x1-x2) < distThreshold && abs(y1-y2) < distThreshold)
+		{
+			x1 = rng.uniform(imageSize/4,imageSize*3/4);
+			y1 = rng.uniform(imageSize/4,imageSize*3/4);
+			x2 = rng.uniform(0,imageSize);
+			y2 = rng.uniform(0,imageSize);
+		}
+		pointPairVector.at<int>(i,0) = x1;
+		pointPairVector.at<int>(i,1) = y1;
+		pointPairVector.at<int>(i,2) = x2;
+		pointPairVector.at<int>(i,3) = y2;
+	}
+
+	
+
+	printf("Calculate predictions....\n");
+	for(int im=0; im<testData.randChars.size(); im++)
+	{
+		Mat testFeatures = Mat::zeros(1,numOfPoints,CV_32FC1);
+		calcPointPairsFeaturesTile(*testData.randChars[im],testFeatures,pointPairVector,numOfPoints,0);
+		//imshow("im",*testData.randChars[im]);
+		//waitKey();
+		treePred = Mat::zeros(256,1, CV_32SC1);
+		for(int f=0; f<numOfForests; f++)
+		{
+			for(int t=0; t<(int)numOfTrees; t++)
+			{
+				tree = forestVector[f]->get_tree(t);
+				treePred.at<int>(tree->predict(testFeatures)->value,0)++;
+			}
+		}
+		cv::minMaxIdx(treePred,&minVal,&maxVal,minIndx,maxIndx);
+
+		//cout << (char)(*maxIndx) << endl;
+		if(*maxIndx == testData.responses.at<int>(im,0))
+		{
+			truePred++;
+			trueConf += maxVal/(numOfTrees*numOfForests);
+		}
+		//if(maxVal > numOfTrees*numOfForests*threshold)
+			//truePred++;
+	}
+
+	cout << "Number of test images: " << testNum*numOfClasses << endl;
+	cout << "True detections :" << truePred << endl;
+	cout << "Average amount of correct classifications: " << trueConf/(testNum*numOfClasses) << endl;
 }
-}*/
 
 vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> forestVector,int imNum, int imageWidth, int imageHeight, int charSizeX, int charSizeY, int overlap, int numOfTrees,double desicionThres, int numOfPointPairs, string charType, string featureType)
 {
@@ -242,7 +302,7 @@ vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> fo
 	DWORD start, stop;
 	int xPos, yPos, predPosx, predPosy;
 	Mat imRect, integralRect, featureMat;
-	int imRectUp,imRectDown, imRectMiddleHor, imRectMiddleVert, rectFiltNum;
+	int imRectUp,imRectDown, imRectMiddleHor, imRectMiddleVert, imRectRight, imRectLeft, imRectSum, rectFiltNum;
 	vector<Mat*> predictions;
 	Mat* pred;
 	char proxIndx;
@@ -310,13 +370,17 @@ vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> fo
 			{
 				int rectArea = charSizeX*charSizeY*255;
 				imRect = (*randIms.randChars[im])(Rect(xPos,yPos,charSizeX,charSizeY));
-				imRectUp = sum(imRect(Rect(0,0,charSizeX,charSizeY/2)))(0);
-				imRectDown = sum(imRect(Rect(0,charSizeY/2,charSizeX,charSizeY/2)))(0);
+				imRectSum = sum(imRect)(0);
+				imRectUp = sum(imRect(Rect(0,0,charSizeX,charSizeY/4)))(0);
+				imRectDown = sum(imRect(Rect(0,charSizeY*3/4,charSizeX,charSizeY/4)))(0);
 				imRectMiddleHor = sum(imRect(Rect(0,charSizeY*7/16,charSizeX,charSizeY/8)))(0);
 				imRectMiddleVert = sum(imRect(Rect(charSizeX*7/16,0,charSizeX/8, charSizeY)))(0);
-
-				if(imRectUp < rectArea/2 && imRectDown < rectArea/2 && imRectMiddleHor < rectArea/8 && imRectMiddleVert < rectArea/8)
+				imRectLeft = sum(imRect(Rect(0,0,charSizeX*4/16, charSizeY)))(0);
+				imRectRight = sum(imRect(Rect(charSizeX*12/16,0,charSizeX*4/16, charSizeY)))(0);
+				if(imRectUp < rectArea/4 && imRectDown < rectArea/4 && imRectMiddleVert < rectArea/8 && imRectMiddleHor < rectArea/8)
 				{
+					//imshow("sfsdf",imRect);
+					//waitKey();
 					/*int indx = 0; 
 					for(int rectx=0; rectx <8; rectx++)
 					{
@@ -399,7 +463,7 @@ vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> fo
 						}
 					}
 					cv::minMaxIdx(treePred,&minVal,&maxVal,minIndx,maxIndx);
-
+					//cout << (char)(*maxIndx) << endl;
 					if(maxVal > numOfTrees*numOfForests*desicionThres)
 						pred->at<uchar>(predPosx,predPosy) = *maxIndx;
 						
@@ -427,20 +491,20 @@ vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> fo
 }
 
 
-void evaluateResult(vector<Mat*> predictions, RandomCharactersImages& randIms,  int imageWidth, int imageHeigth, int charSizeX, int charSizeY, int numOfImages, int overlap)
+void evaluateResult(vector<Mat*> predictions, RandomCharactersImages& randIms,  int imageWidth, int imageHeight, int charSizeX, int charSizeY, int numOfImages, int overlap, int upSample)
 {
 	printf("Visulize result....\n\n");
 	int overlapTileX = charSizeX/overlap;
 	int overlapTileY = charSizeY/overlap;
 	int tileNumX = imageWidth/charSizeX*overlap - (overlap-1);
-	int tileNumY = imageHeigth/charSizeY*overlap - (overlap-1);
+	int tileNumY = imageHeight/charSizeY*overlap - (overlap-1);
 	char p;
 	int numOfTrue, numOfFalse;
 	char maxRes;
 	string charStr;
 	double charSizeR = 0.25;//charSize/(100*overlap) + 1;
 	Mat characterRect, responseRect;
-	Mat visulizePred = Mat::zeros(imageWidth,imageHeigth,CV_8UC3);
+	Mat visulizePred = Mat::zeros(imageHeight,imageWidth,CV_8UC3);
 	add(visulizePred,255,visulizePred);
 	//histogram parameters
 	MatND hist;
@@ -500,6 +564,9 @@ void evaluateResult(vector<Mat*> predictions, RandomCharactersImages& randIms,  
 		}
 		cout << "Number of true detections: " << numOfTrue << endl;
 		cout << "Number of false detections: " << numOfFalse << endl;
+		//Mat upSampledVis, upSampledIm;
+		//resize(visulizePred,upSampledVis,Size(imageHeight*upSample,imageWidth*upSample));
+		//resize(*randIms.randChars[i],upSampledIm,Size(imageHeight*upSample,imageWidth*upSample));
 		imshow("image", *randIms.randChars[i]);
 		imshow("visulize predictions",visulizePred);
 		waitKey();

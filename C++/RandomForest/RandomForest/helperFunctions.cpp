@@ -40,9 +40,9 @@ string intToStr(int i, int numOfChars,int numOfClasses, int depth, int treeNum, 
 		ret1 + "x" + ret2 + "_depth" + ret4 + "_treeNum" + ret5 + "_angle" + ret6;
 	if(n)
 	CreateDirectoryA(mapName.c_str(),NULL);
-	//name = mapName + "\\" +"Forest" + "_" + ret3 + ".xml";
+	name = mapName + "\\" +"Forest" + "_" + ret3 + ".xml";
 	//name = charType + "_" + featureType + "_NumOfData " + ret1 + "x" + ret2 + "_" + ret3 + ".xml";
-	name = "C:\\Users\\tfridol\\git\\Exjobb\\C++\\RandomForest\\RandomForest\\uppercase_rects_NumOfData 5200\\uppercase_NumOfData 5200_" + ret3 + ".xml";
+	//name = "C:\\Users\\tfridol\\git\\Exjobb\\C++\\RandomForest\\RandomForest\\uppercase_rects_NumOfData 5200\\uppercase_NumOfData 5200_" + ret3 + ".xml";
 	return name;
 }
 
@@ -140,6 +140,43 @@ CSize loadSizeFromFile(const char* filename)
 	std::ifstream fin(filename);
 	fin >> s.width >> s.height;
 	return s;
+}
+
+void createAndSavePointPairs(int numOfPoints, int width, int height, string filename)
+{
+	/*std::ofstream fout(filename);
+	if(!fout)
+	{
+		std::cout<<"File Not Opened"<<std::endl;  return;
+	}*/
+	printf("Create random point pairs and save to file....\n\n");
+	Mat pointPairVector = Mat::zeros(numOfPoints,4,CV_32SC1);
+	cv::RNG rng(0);
+	int distThreshold = 20;
+	int x1, x2, y1, y2;
+	for(int i=0; i<numOfPoints; i++)
+	{
+		x1 = 0;
+		y1 = 0;
+		x2 = 0;
+		y2 = 0;
+
+		while(abs(x1-x2) < distThreshold && abs(y1-y2) < distThreshold)
+		{
+			x1 = rng.uniform(width/4,width*3/4);
+			y1 = rng.uniform(height/4,height*3/4);
+			x2 = rng.uniform(0,width);
+			y2 = rng.uniform(0,height);
+		}
+
+		pointPairVector.at<int>(i,0) = x1;
+		pointPairVector.at<int>(i,1) = y1;
+		pointPairVector.at<int>(i,2) = x2;
+		pointPairVector.at<int>(i,3) = y2;
+	}
+
+	cv::imwrite(filename, pointPairVector); 
+	//fout.close();
 }
 
 void writeMatToFile(Mat& m, Mat& r,int imageNum, const char* filename)

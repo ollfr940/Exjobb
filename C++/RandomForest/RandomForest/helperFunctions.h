@@ -27,6 +27,7 @@ void draw_box(cv::Mat * img, cv::Rect rect);
 void writeSizeToFile(int imSizeX, int imSizeY, const char* filename);
 CSize loadSizeFromFile(const char* filename);
 std::string intToStr(int i, int numOfChars,int numOfClasses, int depth, int treeNum, int angle, std::string charType, std::string featureType, bool n);
+void createAndSavePointPairs(int numOfPoints, int width, int height, std::string filename);
 void preProcessRect(cv::Mat& image, double threshold);
 
 #endif

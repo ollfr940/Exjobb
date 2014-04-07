@@ -18,26 +18,27 @@ vector<Point*> points;
 bool training = false;
 bool trainFromImage = false;
 bool dataFromRealImage = false;
-int numOfChars = 200;
+int numOfChars = 40;
 int numOfImages = 1;
-double desicionThres = 0.4;
+double desicionThres = 0.2;
 string charType = "uppercase";
-string featureType = "rects";
+string featureType = "points";
+int upSample = 2;
 int numOfClasses = 26;
-int charSize = 120;
+int charSize = 64;
 double fontSize = charSize/30;
-int imageWidth = 1200;
-int imageHeight = 1200;
+int imageWidth = 1024;
+int imageHeight = 1024;
 double angle = 10;
 int charDiv = 15;
 int overlap = 8;
 int numOfPointPairs = 100000;
 
 //Random forest parameters
-int numOfForests = 17;
+int numOfForests = 50;
 int maxDepth = 10;
 int minSampleCount =numOfChars/100;
-float regressionAccuracy = 0.9;
+float regressionAccuracy = 0.2;
 bool useSurrugate = false;
 int maxCategories = 10;
 const float *priors;
@@ -150,21 +151,19 @@ int _tmain(int argc, _TCHAR* argv[])
 		for(int i=0; i<numOfForests; i++)
 		{
 			forestVector.push_back(new CvRTrees);
-			cout << "loading: " << intToStr(i,numOfChars,numOfClasses,maxDepth,maxNumOfTreesInForest,angle,charType,featureType,false) << endl;
+			cout << "loading: " << intToStr(i,numOfChars,numOfClasses,maxDepth,maxNumOfTreesInForest,angle,charType,featureType,false) << endl << endl;
 			forestVector[i]->load(intToStr(i,numOfChars,numOfClasses,maxDepth,maxNumOfTreesInForest,angle,charType,featureType,false).c_str());
 		}
 
 		CSize charSizeXY = loadSizeFromFile("charSize.txt");
 		charSizeXY.height = charSize;
 		charSizeXY.width = charSize;
-		RandomCharactersImages testIm = createTestImages(numOfImages,50,charSize,imageWidth,imageHeight,charType,angle,fontSize,numOfClasses);
-		vector<Mat*> predictions = predictImages(testIm,forestVector,numOfImages,imageWidth,imageHeight,charSizeXY.width,charSizeXY.height,overlap,maxNumOfTreesInForest,desicionThres,numOfPointPairs,charType,featureType);
-		evaluateResult(predictions,testIm,imageWidth,imageHeight,charSizeXY.width,charSizeXY.height,numOfImages,overlap);
-
-		cout << "tree count: " << tree.get_tree_count() << endl;
+		evaluateIm(forestVector,100,charSize,charType,featureType, charDiv,fontSize,numOfClasses,numOfPointPairs,angle,maxNumOfTreesInForest,desicionThres);
+		//RandomCharactersImages testIm = createTestImages(numOfImages,50,charSize,imageWidth,imageHeight,charType,angle,fontSize,numOfClasses);
+		//vector<Mat*> predictions = predictImages(testIm,forestVector,numOfImages,imageWidth,imageHeight,charSizeXY.width,charSizeXY.height,overlap,maxNumOfTreesInForest,desicionThres,numOfPointPairs,charType,featureType);
+		//evaluateResult(predictions,testIm,imageWidth,imageHeight,charSizeXY.width,charSizeXY.height,numOfImages,overlap,upSample);
 
 	}
-
 	return 0;
 }
 
