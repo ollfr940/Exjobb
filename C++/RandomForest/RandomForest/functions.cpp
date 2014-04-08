@@ -41,6 +41,7 @@ RandomCharacters produceData(int numOfChars, int charSize, string type,double an
 
 		for(int i=0; i<numOfChars; i++)
 		{
+			chars.responses.at<int>(numOfClasses*numOfChars+i,0) = 0;
 			image = new Mat(Mat::zeros(charSize,charSize,CV_8UC1));
 			cv::add(*image,255,*image);
 			d1 = rng.uniform(d,d+numOfClasses);
@@ -50,7 +51,7 @@ RandomCharacters produceData(int numOfChars, int charSize, string type,double an
 
 			org1.x = -charSize/2;
 			org1.y = charSize-27;
-			org2.x = charSize-20;
+			org2.x = charSize-30;
 			org2.y = charSize-27;
 
 			randomAngle = rng.uniform(-angle,angle);

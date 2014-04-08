@@ -16,7 +16,7 @@ using namespace cv;
 vector<Point*> points;
 
 bool training = true;
-bool trainFromImage = true;
+bool trainFromImage = false;
 bool dataFromRealImage = false;
 bool falseClass = true;
 int numOfChars = 120;
@@ -31,13 +31,13 @@ double fontSize = charSize/30;
 int imageWidth = 1024;
 int imageHeight = 1024;
 double angle = 10;
-int charDiv = 15;
-int charOrg = 20;
+int charDiv = 20;
+int charOrg = 25;
 int overlap = 8;
 int numOfPointPairs = 100000;
 
 //Random forest parameters
-int numOfForests = 12;
+int numOfForests = 1;
 int maxDepth = 10;
 int minSampleCount =numOfChars/100;
 float regressionAccuracy = 0.2;
@@ -75,7 +75,7 @@ int _tmain(int argc, _TCHAR* argv[])
 				cout << "Training forest nr: " << i << endl;
 				tree.train(trainingFeatures,CV_ROW_SAMPLE,trainingData.responses,Mat(),Mat(),Mat(),Mat(),
 				CvRTParams(maxDepth,minSampleCount,regressionAccuracy,useSurrugate,maxCategories,priors,calcVarImportance,nactiveVars,maxNumOfTreesInForest,forestAccuracy,termCritType));
-				tree.save(intToStr(i,numOfChars,numOfClasses,maxDepth,maxNumOfTreesInForest,angle,charType,featureType,n).c_str());
+				tree.save(intToStr(i,numOfChars,numOfClasses,charSize,maxDepth,maxNumOfTreesInForest,angle,charType,featureType,falseClass,n).c_str());
 				n = false;
 			}
 		}
@@ -88,7 +88,7 @@ int _tmain(int argc, _TCHAR* argv[])
 				cout << "Training forest nr: " << i << endl;
 				tree.train(trainingFeatures,CV_ROW_SAMPLE,trainingData.responses,Mat(),Mat(),Mat(),Mat(),
 				CvRTParams(maxDepth,minSampleCount,regressionAccuracy,useSurrugate,maxCategories,priors,calcVarImportance,nactiveVars,maxNumOfTreesInForest,forestAccuracy,termCritType));
-				tree.save(intToStr(i,numOfChars,numOfClasses,maxDepth,maxNumOfTreesInForest,angle,charType,featureType, n).c_str());
+				tree.save(intToStr(i,numOfChars,numOfClasses,charSize,maxDepth,maxNumOfTreesInForest,angle,charType,featureType,falseClass, n).c_str());
 				n = false;
 			}
 		}
@@ -153,8 +153,8 @@ int _tmain(int argc, _TCHAR* argv[])
 		for(int i=0; i<numOfForests; i++)
 		{
 			forestVector.push_back(new CvRTrees);
-			cout << "loading: " << intToStr(i,numOfChars,numOfClasses,maxDepth,maxNumOfTreesInForest,angle,charType,featureType,false) << endl << endl;
-			forestVector[i]->load(intToStr(i,numOfChars,numOfClasses,maxDepth,maxNumOfTreesInForest,angle,charType,featureType,false).c_str());
+			cout << "loading: " << intToStr(i,numOfChars,numOfClasses,charSize,maxDepth,maxNumOfTreesInForest,angle,charType,featureType,falseClass,false) << endl << endl;
+			forestVector[i]->load(intToStr(i,numOfChars,numOfClasses,charSize,maxDepth,maxNumOfTreesInForest,angle,charType,featureType,falseClass,false).c_str());
 		}
 
 		CSize charSizeXY = loadSizeFromFile("charSize.txt");

@@ -18,15 +18,16 @@ int calcRectFiltNum(int charSizeX, int charSizeY)
 	return filtNum*17;
 }
 
-string intToStr(int i, int numOfChars,int numOfClasses, int depth, int treeNum, int angle, string charType, string featureType, bool n)
+string intToStr(int i, int numOfChars,int numOfClasses, int charSize, int depth, int treeNum, int angle, string charType, string featureType, bool falseClass, bool n)
 {
-	stringstream s1, s2, s3, s4, s5, s6;
+	stringstream s1, s2, s3, s4, s5, s6, s7;
 	string ret1 = "";
 	string ret2 = "";
 	string ret3 = "";
 	string ret4 = "";
 	string ret5 = "";
 	string ret6 = "";
+	string ret7 = "";
 	string name;
 	string mapName;
 
@@ -36,8 +37,19 @@ string intToStr(int i, int numOfChars,int numOfClasses, int depth, int treeNum, 
 	s4 << depth; s4 >> ret4;
 	s5 << treeNum; s5 >> ret5;
 	s6 << angle; s6 >> ret6;
-	mapName = "C:\\Users\\tfridol\\git\\Exjobb\\C++\\RandomForest\\RandomForest\\" + charType + "_" + featureType + "_NumOfData" + 
-		ret1 + "x" + ret2 + "_depth" + ret4 + "_treeNum" + ret5 + "_angle" + ret6;
+	s7 << charSize; s7 >> ret7;
+
+	if(falseClass)
+	{
+		mapName = "C:\\Users\\tfridol\\git\\Exjobb\\C++\\RandomForest\\RandomForest\\" + charType + "_" + featureType + "_NumOfData" + 
+			ret1 + "x" + ret2 + "_imageSize" + ret7 + "_depth" + ret4 + "_treeNum" + ret5 + "_angle" + ret6 + "_usingFalseClass";
+	}
+	else
+	{
+		mapName = "C:\\Users\\tfridol\\git\\Exjobb\\C++\\RandomForest\\RandomForest\\" + charType + "_" + featureType + "_NumOfData" + 
+			ret1 + "x" + ret2 + "_imageSize" + ret7 + "_depth" + ret4 + "_treeNum" + ret5 + "_angle" + ret6;
+	}
+
 	if(n)
 	CreateDirectoryA(mapName.c_str(),NULL);
 	name = mapName + "\\" +"Forest" + "_" + ret3 + ".xml";
