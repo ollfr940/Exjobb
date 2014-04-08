@@ -5,12 +5,15 @@ using namespace std;
 using namespace cv;
 
 
-RandomCharacters produceData(int numOfChars, int charSize, string type,double angle, int charDiv, double fontSize, int numOfClasses)
+RandomCharacters produceData(int numOfChars, int charSize, string type,double angle, int charDiv, int charOrg, double fontSize, int numOfClasses, bool falseClass)
 {
 	printf("Produce data....\n\n");
 	RandomCharacters chars;
-	chars.responses = Mat::zeros(numOfChars*numOfClasses,1,CV_32SC1);
-	//vector<Mat*> imageVec;
+	if(falseClass)
+		chars.responses = Mat::zeros(numOfChars*(numOfClasses+1),1,CV_32SC1);
+	else
+		chars.responses = Mat::zeros(numOfChars*numOfClasses,1,CV_32SC1);
+
 	Mat* image;
 	uint64 initValue = time(0);
 	cv::RNG rng(initValue);
@@ -30,6 +33,37 @@ RandomCharacters produceData(int numOfChars, int charSize, string type,double an
 		abort();
 	}
 
+	if(falseClass)
+	{
+		char d1, d2;
+		Point org1, org2;
+		string dstr1, dstr2;
+
+		for(int i=0; i<numOfChars; i++)
+		{
+			image = new Mat(Mat::zeros(charSize,charSize,CV_8UC1));
+			cv::add(*image,255,*image);
+			d1 = rng.uniform(d,d+numOfClasses);
+			d2 = rng.uniform(d,d+numOfClasses);
+			dstr1 = d1;
+			dstr2 = d2;
+
+			org1.x = -charSize/2;
+			org1.y = charSize-27;
+			org2.x = charSize-20;
+			org2.y = charSize-27;
+
+			randomAngle = rng.uniform(-angle,angle);
+			cv::putText(*image,dstr1 , org1, 0, fontSize ,0, 10, 8,false);
+			cv::putText(*image,dstr2 , org2, 0, fontSize ,0, 10, 8,false);
+			rotate(*image,randomAngle,charSize,charSize,scale);
+			chars.randChars.push_back(image);
+			cv::imshow("im", *image);
+			cv::waitKey();
+		}
+	}
+
+
 	for(int i=0; i<numOfClasses; i++)
 	{
 		for(int c=0; c<numOfChars; c++)
@@ -40,8 +74,8 @@ RandomCharacters produceData(int numOfChars, int charSize, string type,double an
 			image = new Mat(Mat::zeros(charSize,charSize,CV_8UC1));
 			cv::add(*image,255,*image);
 			cv::Point org;
-			org.x = rng.uniform(20-charDiv,20+charDiv);
-			org.y = rng.uniform(charSize-20-charDiv, charSize-20+charDiv);
+			org.x = rng.uniform(charOrg-charDiv,charOrg+charDiv);
+			org.y = rng.uniform(charSize-charOrg-charDiv, charSize-charOrg+charDiv);
 			dstr = d;
 			randomAngle = rng.uniform(-angle,angle);
 			cv::putText(*image,dstr , org, 0, fontSize ,0, 10, 8,false);
@@ -52,6 +86,7 @@ RandomCharacters produceData(int numOfChars, int charSize, string type,double an
 		}
 		d++;
 	}
+
 	return chars;
 }
 
@@ -223,10 +258,10 @@ Mat createRectFeatures(RandomCharacters trainingData)
 }*/
 
 
-void evaluateIm(vector<CvRTrees*> forestVector, int testNum, int imageSize,string type, string featureType,int charDiv,int fontSize, int numOfClasses, int numOfPoints, double angle, int numOfTrees, double threshold)
+void evaluateIm(vector<CvRTrees*> forestVector, int testNum, int imageSize,string type, string featureType,int charDiv, int charOrg,int fontSize, int numOfClasses, int numOfPoints, double angle, int numOfTrees, double threshold, bool falseClass)
 {
-	RandomCharacters testData = produceData(testNum,imageSize,type,angle,charDiv,fontSize,numOfClasses);
-	//Mat testFeatures = calcFeaturesTraining(testData,numOfPoints,featureType);
+	RandomCharacters testData = produceData(testNum,imageSize,type,angle,charDiv,charOrg,fontSize,numOfClasses, falseClass);
+	Mat testFeatures = calcFeaturesTraining(testData,numOfPoints,featureType);
 	int truePred = 0;
 	double trueConf = 0;
 	int numOfForests = (int)forestVector.size();
@@ -236,7 +271,7 @@ void evaluateIm(vector<CvRTrees*> forestVector, int testNum, int imageSize,strin
 	int maxIndx[2] = {0,0};
 	double minVal, maxVal;
 
-	Mat pointPairVector = Mat::zeros(numOfPoints,4,CV_32SC1);
+	/*Mat pointPairVector = Mat::zeros(numOfPoints,4,CV_32SC1);
 	cv::RNG rng(0);
 	int distThreshold = 20;
 	int x1, x2, y1, y2;
@@ -259,14 +294,14 @@ void evaluateIm(vector<CvRTrees*> forestVector, int testNum, int imageSize,strin
 		pointPairVector.at<int>(i,2) = x2;
 		pointPairVector.at<int>(i,3) = y2;
 	}
-
+	*/
 	
 
 	printf("Calculate predictions....\n");
 	for(int im=0; im<testData.randChars.size(); im++)
 	{
-		Mat testFeatures = Mat::zeros(1,numOfPoints,CV_32FC1);
-		calcPointPairsFeaturesTile(*testData.randChars[im],testFeatures,pointPairVector,numOfPoints,0);
+		//Mat testFeatures = Mat::zeros(1,numOfPoints,CV_32FC1);
+		//calcPointPairsFeaturesTile(*testData.randChars[im],testFeatures,pointPairVector,numOfPoints,0);
 		//imshow("im",*testData.randChars[im]);
 		//waitKey();
 		treePred = Mat::zeros(256,1, CV_32SC1);
@@ -275,12 +310,12 @@ void evaluateIm(vector<CvRTrees*> forestVector, int testNum, int imageSize,strin
 			for(int t=0; t<(int)numOfTrees; t++)
 			{
 				tree = forestVector[f]->get_tree(t);
-				treePred.at<int>(tree->predict(testFeatures)->value,0)++;
+				treePred.at<int>(tree->predict(testFeatures.row(im))->value,0)++;
 			}
 		}
 		cv::minMaxIdx(treePred,&minVal,&maxVal,minIndx,maxIndx);
 
-		//cout << (char)(*maxIndx) << endl;
+		//cout << (char)(*maxIndx) << "\t" << maxVal/(numOfForests*numOfTrees) << endl;
 		if(*maxIndx == testData.responses.at<int>(im,0))
 		{
 			truePred++;
@@ -370,17 +405,17 @@ vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> fo
 			{
 				int rectArea = charSizeX*charSizeY*255;
 				imRect = (*randIms.randChars[im])(Rect(xPos,yPos,charSizeX,charSizeY));
-				imRectSum = sum(imRect)(0);
+				//imRectSum = sum(imRect)(0);
 				imRectUp = sum(imRect(Rect(0,0,charSizeX,charSizeY/4)))(0);
 				imRectDown = sum(imRect(Rect(0,charSizeY*3/4,charSizeX,charSizeY/4)))(0);
 				imRectMiddleHor = sum(imRect(Rect(0,charSizeY*7/16,charSizeX,charSizeY/8)))(0);
 				imRectMiddleVert = sum(imRect(Rect(charSizeX*7/16,0,charSizeX/8, charSizeY)))(0);
-				imRectLeft = sum(imRect(Rect(0,0,charSizeX*4/16, charSizeY)))(0);
-				imRectRight = sum(imRect(Rect(charSizeX*12/16,0,charSizeX*4/16, charSizeY)))(0);
+				//imRectLeft = sum(imRect(Rect(0,0,charSizeX*4/16, charSizeY)))(0);
+				//imRectRight = sum(imRect(Rect(charSizeX*12/16,0,charSizeX*4/16, charSizeY)))(0);
 				if(imRectUp < rectArea/4 && imRectDown < rectArea/4 && imRectMiddleVert < rectArea/8 && imRectMiddleHor < rectArea/8)
 				{
-					//imshow("sfsdf",imRect);
-					//waitKey();
+					imshow("sfsdf",imRect);
+					waitKey();
 					/*int indx = 0; 
 					for(int rectx=0; rectx <8; rectx++)
 					{
@@ -463,7 +498,7 @@ vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> fo
 						}
 					}
 					cv::minMaxIdx(treePred,&minVal,&maxVal,minIndx,maxIndx);
-					//cout << (char)(*maxIndx) << endl;
+					cout << (char)(*maxIndx) << "\t" << maxVal/(numOfForests*numOfTrees) << endl;
 					if(maxVal > numOfTrees*numOfForests*desicionThres)
 						pred->at<uchar>(predPosx,predPosy) = *maxIndx;
 						

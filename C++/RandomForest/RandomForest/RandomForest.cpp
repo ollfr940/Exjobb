@@ -15,27 +15,29 @@ using namespace cv;
 
 vector<Point*> points;
 
-bool training = false;
-bool trainFromImage = false;
+bool training = true;
+bool trainFromImage = true;
 bool dataFromRealImage = false;
-int numOfChars = 40;
+bool falseClass = true;
+int numOfChars = 120;
 int numOfImages = 1;
-double desicionThres = 0.2;
+double desicionThres = 0.5;
 string charType = "uppercase";
 string featureType = "points";
 int upSample = 2;
 int numOfClasses = 26;
-int charSize = 64;
+int charSize = 128;
 double fontSize = charSize/30;
 int imageWidth = 1024;
 int imageHeight = 1024;
 double angle = 10;
 int charDiv = 15;
+int charOrg = 20;
 int overlap = 8;
 int numOfPointPairs = 100000;
 
 //Random forest parameters
-int numOfForests = 50;
+int numOfForests = 12;
 int maxDepth = 10;
 int minSampleCount =numOfChars/100;
 float regressionAccuracy = 0.2;
@@ -68,7 +70,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		{
 			for(int i=0; i<numOfForests; i++)
 			{
-				RandomCharacters trainingData = produceData(numOfChars,charSize,charType,angle, charDiv,fontSize,numOfClasses);
+				RandomCharacters trainingData = produceData(numOfChars,charSize,charType,angle, charDiv, charOrg,fontSize,numOfClasses, falseClass);
 				Mat trainingFeatures = calcFeaturesTraining(trainingData,numOfPointPairs,featureType);
 				cout << "Training forest nr: " << i << endl;
 				tree.train(trainingFeatures,CV_ROW_SAMPLE,trainingData.responses,Mat(),Mat(),Mat(),Mat(),
@@ -81,7 +83,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		{
 			for(int i=*argv[2]-48; i<numOfForests; i += *argv[1]-48)
 			{
-				RandomCharacters trainingData = produceData(numOfChars,charSize,charType,angle, charDiv,fontSize,numOfClasses);
+				RandomCharacters trainingData = produceData(numOfChars,charSize,charType,angle, charDiv,charOrg,fontSize,numOfClasses, falseClass);
 				Mat trainingFeatures = calcFeaturesTraining(trainingData,numOfPointPairs,featureType);
 				cout << "Training forest nr: " << i << endl;
 				tree.train(trainingFeatures,CV_ROW_SAMPLE,trainingData.responses,Mat(),Mat(),Mat(),Mat(),
@@ -158,7 +160,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		CSize charSizeXY = loadSizeFromFile("charSize.txt");
 		charSizeXY.height = charSize;
 		charSizeXY.width = charSize;
-		evaluateIm(forestVector,100,charSize,charType,featureType, charDiv,fontSize,numOfClasses,numOfPointPairs,angle,maxNumOfTreesInForest,desicionThres);
+		evaluateIm(forestVector,100,charSize,charType,featureType, charDiv,charOrg,fontSize,numOfClasses,numOfPointPairs,angle,maxNumOfTreesInForest,desicionThres, falseClass);
 		//RandomCharactersImages testIm = createTestImages(numOfImages,50,charSize,imageWidth,imageHeight,charType,angle,fontSize,numOfClasses);
 		//vector<Mat*> predictions = predictImages(testIm,forestVector,numOfImages,imageWidth,imageHeight,charSizeXY.width,charSizeXY.height,overlap,maxNumOfTreesInForest,desicionThres,numOfPointPairs,charType,featureType);
 		//evaluateResult(predictions,testIm,imageWidth,imageHeight,charSizeXY.width,charSizeXY.height,numOfImages,overlap,upSample);

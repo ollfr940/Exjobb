@@ -1,7 +1,6 @@
 // Exjobb.cpp : Defines the entry point for the console application.
 //
 
-
 #include "stdafx.h"
 #include "functions.h"
 #include "Classes.h"
@@ -13,7 +12,7 @@ using namespace cv;
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	bool training =  false;
+	bool training =  true;
 	bool cascadeTesting = true;
 	bool testTileSize = false;
 	int images = 100;
@@ -21,9 +20,9 @@ int _tmain(int argc, _TCHAR* argv[])
 	int tileSize = 24;
 	string codeType = "2D";
 	bool useLaplace = false;
-	int downSample = 2;
+	int downSample = 3;
 	int imageSize = 2048/downSample;
-	int overlap = 1;
+	int overlap = 3;
 	int tileNum = imageSize/tileSize*overlap - (overlap-1);
 	
 	float thresholdStd = -4;
@@ -31,7 +30,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	float thresholdLBP = -3;
 	float thresholdI1D = -2.5;
 	float thresholdDist = -1.5;
-	float strongClassThres = thresholdStd;
+	float strongClassThres = thresholdLBP;
 
 	//For testing
 	int scaleDown = 2;
@@ -69,7 +68,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		cout << "Train error: " <<fl1 << endl 
 			<< "Test error: " << fl2 << endl << endl;
 
-		boost.save("./LBP50x64_boost_downsample1_overlap3.xml", "boost");											//
+		boost.save("./LBP50x24_boost_downsample3_overlap3.xml", "boost");											//
 
 		vector<char> testResponses = getResponses(imNum,firstImage,tileSize,imageSize,tileNum,overlap,downSample,false,codeType);
 		printf("Calculate features for testing:\n\n");

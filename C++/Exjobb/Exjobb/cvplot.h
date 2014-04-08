@@ -484,7 +484,6 @@ void Figure::Show()
 	DrawPlots(output);
 
 	DrawLabels(output, figure_size.width - 100, 10);
-
 	cvShowImage(figure_name.c_str(), output);
 	cvWaitKey(1);
 	cvReleaseImage(&output);

@@ -11,9 +11,6 @@
 #include "cvplot.h"
 #include "Classes.h"
 
-typedef cv::Mat (*featureFunc) (cv::Mat&);
-
-
 std::string intToStr(int i, bool groundTruth)
 {
 	std::string bla = "000000";
@@ -34,7 +31,6 @@ std::string intToStr(int i, bool groundTruth)
 
 	return name;
 }
-
 
 void writeMatToXML(cv::Mat& m,const char* filename)
 {
@@ -167,17 +163,8 @@ cv::Mat createFeatures(int numberOfImages,int firstImage, int tileSize, int imag
 		im = cv::imread(intToStr(r+firstImage,false), CV_LOAD_IMAGE_GRAYSCALE);
 		if(downSample > 1)
 		{
-			//downSampleIm(im,downSampledIm,downSample);
 			cv::resize(im,downSampledIm,cv::Size(imageSize,imageSize));
-			//cv::pyrDown(im,downSampledIm,cv::Size(imageSize,imageSize));
-			//std::cout << im.type() << std::endl;
-			//cv::add(downSampledIm,sharpIm,im);
 			im = downSampledIm;
-			//std::cout << im.type() << std::endl;
-			//cv::namedWindow("Test images",CV_WINDOW_AUTOSIZE);
-			//imshow("Test images", im);
-			//cv::waitKey();
-
 		}
 
 		if(laplace)
@@ -185,12 +172,6 @@ cv::Mat createFeatures(int numberOfImages,int firstImage, int tileSize, int imag
 			cv::Laplacian(im,sharpIm,-1,5);
 			im = sharpIm;
 		}
-		//if(featureFunc->name == "STD" )
-		/*
-			cv::GaussianBlur(im,sharpIm,cv::Size(0,0),10);
-			cv::addWeighted(im,4, sharpIm,-2,0,sharpIm);
-			im = sharpIm;
-		}*/
 
 		if(featureFunc->name == "I1D")
 		{
@@ -258,7 +239,6 @@ std::vector<char> getResponses(int numberOfImages,int firstImage,int tileSize,in
 		if(downSample > 1)
 		{
 			downSampleIm(groundTruth,downSampledGroundTruth,downSample);
-			//cv::pyrDown(groundTruth,downSampledGroundTruth,cv::Size(imageSize,imageSize));
 			groundTruth = downSampledGroundTruth;
 		}
 
@@ -372,11 +352,7 @@ void evaluateResult(int firstImage,int k, int scaleDown,int imNum, int tileSize,
 		if(downSample > 1)
 		{
 			cv::resize(im,downSampledIm,cv::Size(imageSize,imageSize));
-			//downSampleIm(im,downSampledIm,downSample);
-			//cv::pyrDown(im,downSampledIm,cv::Size(imageSize,imageSize));
 			im = downSampledIm;
-			//cv::GaussianBlur(downSampledIm,downSampledIm, cv::Size(0, 0), 3);
-			//cv::addWeighted(downSampledIm, 1.5, downSampledIm, -0.5, 0, downSampledIm);
 		}
 
 		if(i >= k && i<scaleDown*scaleDown+k)
@@ -384,7 +360,6 @@ void evaluateResult(int firstImage,int k, int scaleDown,int imNum, int tileSize,
 
 		for( int y = 0; y < tileNum*tileNum; y++ )
 		{
-			//testSample.at<float>(0,0) = responses[y+i*tileNum*tileNum];
 			for(int x=1; x < features+1; x++)
 			{
 
@@ -508,7 +483,6 @@ std::vector<cv::Mat*> cascade(int firstImage,int imNum, int tileSize, int imageS
 		if(downSample > 1)
 		{
 			cv::resize(im,downSampledIm,cv::Size(imageSize,imageSize));
-			//cv::pyrDown(im,downSampledIm,cv::Size(imageSize,imageSize));
 			im = downSampledIm;
 		}
 
@@ -643,8 +617,6 @@ void evaluateCascade(int firstImage, int k, int scaleDown,int imNum, int tileSiz
 		if(downSample > 1)
 		{
 			cv::resize(im,downSampledIm,cv::Size(imageSize,imageSize));
-			//downSampleIm(im,downSampledIm,downSample);
-			//cv::pyrDown(im,downSampledIm,cv::Size(imageSize,imageSize));
 			im = downSampledIm;
 		}
 

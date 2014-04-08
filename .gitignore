@@ -1,1 +1,9 @@
 Maxicode
+*.out
+*.blg
+*.log
+*.gz
+*.aux
+*.bbl
+*.brf
+*.idx

@@ -17,11 +17,11 @@
 #define FUNCTIONS_H
 
 void writeMatToFile(cv::Mat& m,cv::Mat& r,int imageNum, const char* filename);
-RandomCharacters produceData(int numOfChars, int charSize, std::string type,double angle, int charDiv, double fontSize, int numOfClasses);
+RandomCharacters produceData(int numOfChars, int charSize, std::string type,double angle, int charDiv, int charOrg, double fontSize, int numOfClasses, bool falseClass);
 void evaluateResult(std::vector<cv::Mat*> predictions,RandomCharactersImages& randIms, int imageWidth, int imageHeight, int charSizeX, int charSizeY, int numOfImages, int overlap, int upSample);
 std::vector<cv::Mat*> predictImages(RandomCharactersImages& randIms, std::vector<CvRTrees*> forestVector,int imNum, int imageWidth, int imageHeight, int charSizeX, int charSizeY, int overlap,int numOfTrees,double desicionThres, int numOfPointPairs, std::string charType, std::string featureType);
 RandomCharactersImages createTestImages(int numOfImages, int numOfChars, int charSize, int imageWidth,int imageHeight, std::string type,double angle, double fontSize, int numOfClasses);
 RandomCharacters produceDataFromImage(std::vector<cv::Rect*> boxVec, std::vector<char> boxRes, int numOfCharacters, double angle, cv::Mat& image, bool useRealIm);
-void evaluateIm(std::vector<CvRTrees*> tree, int testNum, int imageSize,std::string type, std::string featureType,int charDiv,int fontSize, int numOfClasses, int numOfPoints, double angle, int numOfTrees, double threshold);
+void evaluateIm(std::vector<CvRTrees*> tree, int testNum, int imageSize,std::string type, std::string featureType,int charDiv, int charOrg,int fontSize, int numOfClasses, int numOfPoints, double angle, int numOfTrees, double threshold, bool falseClass);
 
 #endif
