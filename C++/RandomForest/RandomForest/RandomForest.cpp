@@ -6,6 +6,7 @@
 #include "features.h"
 #include "Classes.h"
 #include "helperFunctions.h"
+#include "functionsForRealImages.h"
 #include <opencv/cv.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -18,29 +19,35 @@ vector<Point*> points;
 bool training = true;
 bool trainFromImage = false;
 bool dataFromRealImage = false;
+bool evaluateRealImageUsingAfont = true;
 bool falseClass = true;
-int numOfChars = 120;
+bool useAfont = true;
+bool useNoise = true;
+
+int numOfChars = 125;
+int numOfFalseData = 200;
 int numOfImages = 1;
-double desicionThres = 0.5;
+double desicionThres = 0.2;
 string charType = "uppercase";
 string featureType = "points";
-int upSample = 2;
+float downSample = 2;
 int numOfClasses = 26;
 int charSize = 128;
 double fontSize = charSize/30;
 int imageWidth = 1024;
 int imageHeight = 1024;
 double angle = 10;
-int charDiv = 20;
+int charDivX = 25;
+int charDivY = 10;
 int charOrg = 25;
-int overlap = 8;
+int overlap = 16;
 int numOfPointPairs = 100000;
 
 //Random forest parameters
 int numOfForests = 1;
 int maxDepth = 10;
 int minSampleCount =numOfChars/100;
-float regressionAccuracy = 0.2;
+float regressionAccuracy = 0.3;
 bool useSurrugate = false;
 int maxCategories = 10;
 const float *priors;
@@ -70,8 +77,13 @@ int _tmain(int argc, _TCHAR* argv[])
 		{
 			for(int i=0; i<numOfForests; i++)
 			{
-				RandomCharacters trainingData = produceData(numOfChars,charSize,charType,angle, charDiv, charOrg,fontSize,numOfClasses, falseClass);
-				Mat trainingFeatures = calcFeaturesTraining(trainingData,numOfPointPairs,featureType);
+				RandomCharacters trainingData;
+				if(useAfont)
+					trainingData = produceDataFromAfont(numOfChars,numOfClasses,numOfFalseData,charDivX,charDivY,angle,falseClass,downSample,useNoise);
+				else
+					trainingData = produceData(numOfChars,charSize,charType,angle, charDivX,charDivY, charOrg,fontSize,numOfClasses, falseClass,useNoise);
+
+				Mat trainingFeatures = calcFeaturesTraining(trainingData,numOfPointPairs,featureType, downSample,useNoise);
 				cout << "Training forest nr: " << i << endl;
 				tree.train(trainingFeatures,CV_ROW_SAMPLE,trainingData.responses,Mat(),Mat(),Mat(),Mat(),
 				CvRTParams(maxDepth,minSampleCount,regressionAccuracy,useSurrugate,maxCategories,priors,calcVarImportance,nactiveVars,maxNumOfTreesInForest,forestAccuracy,termCritType));
@@ -83,8 +95,8 @@ int _tmain(int argc, _TCHAR* argv[])
 		{
 			for(int i=*argv[2]-48; i<numOfForests; i += *argv[1]-48)
 			{
-				RandomCharacters trainingData = produceData(numOfChars,charSize,charType,angle, charDiv,charOrg,fontSize,numOfClasses, falseClass);
-				Mat trainingFeatures = calcFeaturesTraining(trainingData,numOfPointPairs,featureType);
+				RandomCharacters trainingData = produceData(numOfChars,charSize,charType,angle, charDivX,charDivY,charOrg,fontSize,numOfClasses, falseClass, useNoise);
+				Mat trainingFeatures = calcFeaturesTraining(trainingData,numOfPointPairs,featureType,downSample,useNoise);
 				cout << "Training forest nr: " << i << endl;
 				tree.train(trainingFeatures,CV_ROW_SAMPLE,trainingData.responses,Mat(),Mat(),Mat(),Mat(),
 				CvRTParams(maxDepth,minSampleCount,regressionAccuracy,useSurrugate,maxCategories,priors,calcVarImportance,nactiveVars,maxNumOfTreesInForest,forestAccuracy,termCritType));
@@ -119,7 +131,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		Mat imageCopy = image.clone();
 		if(!image.data)
 		{
-			printf("!!! Failed \n");
+			printf("Failed \n");
 			return 2;
 		}
 
@@ -139,7 +151,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		}
 
 		RandomCharacters trainingData = produceDataFromImage(boxVector,boxResponses,numOfChars,angle,imageCopy,dataFromRealImage);
-		Mat trainingFeatures = calcFeaturesTraining(trainingData,numOfPointPairs,featureType);
+		Mat trainingFeatures = calcFeaturesTraining(trainingData,numOfPointPairs,featureType, downSample,useNoise);
 
 		printf("Training....\n");
 		tree.train(trainingFeatures,CV_ROW_SAMPLE,trainingData.responses,Mat(),Mat(),Mat(),Mat(),
@@ -147,23 +159,79 @@ int _tmain(int argc, _TCHAR* argv[])
 		tree.save("test_im.xml");
 		writeSizeToFile(trainingData.randChars[0]->size().width,trainingData.randChars[0]->size().height, "charSize.txt");
 	}
+	else if(evaluateRealImageUsingAfont)
+	{
+		Mat im, image;
+		im = imread("C:\\Users\\tfridol\\git\\Exjobb\\C++\\RandomForest\\RandomForest\\Images\\im8.jpg",CV_LOAD_IMAGE_GRAYSCALE);
+		imageWidth = im.size().width/2;
+		imageHeight = im.size().height/2;
+		resize(im,image,Size(imageWidth,imageHeight));
+		String name = "Draw bounding boxes for adjusting image";
+		namedWindow(name);
+		box = Rect(0,0,1,1);
+
+		Mat imageCopy = image.clone();
+
+		Mat temp = image.clone();
+		setMouseCallback(name, drawSquareToAdjustImage, &image);
+
+		while(1)
+		{
+			temp = image.clone();
+			if (drawing_box)
+				draw_box(&temp, box);
+
+			imshow(name, temp);
+
+			if(waitKey(15) == 27)
+				break;
+
+			if(waitKey(15) == 32)
+ 				image = imageCopy.clone();
+		}
+		cv::destroyWindow(name);
+		//Resize image to adjust tile to size 64x64
+		cout << boxVector[0]->size().height << endl;
+		cout << boxVector[0]->height << endl;
+		int imageSizeX = imageCopy.cols/(boxVector[0]->height/(charSize/downSample));
+		int imageSizeY = imageCopy.rows/(boxVector[0]->height/(charSize/downSample));
+		int charSizeX = charSize/(int)downSample;
+		int charSizeY = charSize/(int)downSample;
+
+		Mat reSizedImage;
+		resize(imageCopy,reSizedImage,Size(imageSizeX,imageSizeY));
+		vector<Mat*> testIm;
+		testIm.push_back(&reSizedImage);
+		vector<CvRTrees*> forestVector = loadForests(numOfForests,maxDepth,maxNumOfTreesInForest,numOfChars,numOfClasses,charSize,angle,charType,featureType,falseClass);
+		//cv::threshold(reSizedImage,reSizedImage,128,255,CV_8UC1);
+		//imshow("LSDFJ",reSizedImage);
+		//waitKey();
+
+		vector<Mat*> predictions = predictRealImages(testIm,forestVector,numOfImages,imageSizeX,imageSizeY,charSizeX,charSizeY,overlap,
+			maxNumOfTreesInForest,desicionThres,numOfPointPairs,charType,featureType, downSample, useNoise);
+
+		evaluateResultRealImage(predictions,testIm,imageSizeX*downSample,imageSizeY*downSample,charSizeX*downSample,charSizeY*downSample,numOfImages,overlap,downSample);
+
+	}
 	else
 	{
-		vector<CvRTrees*> forestVector;
-		for(int i=0; i<numOfForests; i++)
-		{
-			forestVector.push_back(new CvRTrees);
-			cout << "loading: " << intToStr(i,numOfChars,numOfClasses,charSize,maxDepth,maxNumOfTreesInForest,angle,charType,featureType,falseClass,false) << endl << endl;
-			forestVector[i]->load(intToStr(i,numOfChars,numOfClasses,charSize,maxDepth,maxNumOfTreesInForest,angle,charType,featureType,falseClass,false).c_str());
-		}
-
+		vector<CvRTrees*> forestVector = loadForests(numOfForests,maxDepth,maxNumOfTreesInForest,numOfChars,numOfClasses,charSize,angle,charType,featureType,falseClass);
+		
 		CSize charSizeXY = loadSizeFromFile("charSize.txt");
 		charSizeXY.height = charSize;
 		charSizeXY.width = charSize;
-		evaluateIm(forestVector,100,charSize,charType,featureType, charDiv,charOrg,fontSize,numOfClasses,numOfPointPairs,angle,maxNumOfTreesInForest,desicionThres, falseClass);
-		//RandomCharactersImages testIm = createTestImages(numOfImages,50,charSize,imageWidth,imageHeight,charType,angle,fontSize,numOfClasses);
-		//vector<Mat*> predictions = predictImages(testIm,forestVector,numOfImages,imageWidth,imageHeight,charSizeXY.width,charSizeXY.height,overlap,maxNumOfTreesInForest,desicionThres,numOfPointPairs,charType,featureType);
-		//evaluateResult(predictions,testIm,imageWidth,imageHeight,charSizeXY.width,charSizeXY.height,numOfImages,overlap,upSample);
+		
+		RandomCharactersImages testIm;
+		if(useAfont)
+			testIm = createTestImagesAfont(numOfImages,50,charSize,charDivX,charDivY,imageWidth,imageHeight,charType,angle,fontSize,numOfClasses, downSample,useNoise);
+		else
+			testIm = createTestImages(numOfImages,50,charSize,imageWidth,imageHeight,charType,angle,fontSize,numOfClasses);
+
+		//evaluateIm(forestVector,100,charSize,charType,featureType, charDivX,charDivY,charOrg,fontSize,numOfClasses,numOfPointPairs,angle,maxNumOfTreesInForest,desicionThres, falseClass,useAfont, downSample);
+		vector<Mat*> predictions = predictImages(testIm,forestVector,numOfImages,imageWidth,imageHeight,charSizeXY.width,charSizeXY.height,overlap,maxNumOfTreesInForest,
+			desicionThres,numOfPointPairs,charType,featureType, downSample,useNoise);
+
+		evaluateResult(predictions,testIm,imageWidth,imageHeight,charSizeXY.width,charSizeXY.height,numOfImages,overlap,downSample);
 
 	}
 	return 0;

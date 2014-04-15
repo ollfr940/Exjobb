@@ -16,8 +16,8 @@
 #define FEATURES_H
 
 void calcRectFeatureTile(cv::Mat& tile, cv::Mat& featureMat, int width, int height, int im);
-cv::Mat calcFeaturesTraining(RandomCharacters trainingData, int numOfPoints, std::string featureType);
-void calcPointPairsFeaturesTile(cv::Mat& tile, cv::Mat& featureMat, cv::Mat& pointVector, int numOfPoints, int im);
+cv::Mat calcFeaturesTraining(RandomCharacters trainingData, int numOfPoints, std::string featureType, float downSample, bool useNoise);
+void calcPointPairsFeaturesTile(cv::Mat& tile, cv::Mat& featureMat, cv::Mat& pointVector, int numOfPoints, int im, bool useNoise);
 cv::Mat calcPointPairsFeaturesTraining(RandomCharacters trainingData, int numOfPoints);
 
 #endif

@@ -25,7 +25,7 @@ void calcRectFeatureTile(Mat& tile, Mat& featureMat, int width, int height, int 
 				for(int j=0; j<rectNumy; j++)
 				{
 					integral(tile(Rect(i*rectSizex,j*rectSizey,rectSizex,rectSizey)),integralRect,CV_32FC1);
-					float p = integralRect.at<float>(rectSizey,rectSizex) - integralRect.at<float>(rectSizey/2,rectSizex);
+					p = integralRect.at<float>(rectSizey,rectSizex) - integralRect.at<float>(rectSizey/2,rectSizex);
 					featureMat.at<float>(im, indx) = 2*p - integralRect.at<float>(rectSizey,rectSizex);
 					indx++;
 					p = integralRect.at<float>(rectSizey,rectSizex) - integralRect.at<float>(rectSizey,rectSizex/2);
@@ -82,7 +82,7 @@ void calcRectFeatureTile(Mat& tile, Mat& featureMat, int width, int height, int 
 	}
 }
 
-void calcPointPairsFeaturesTile(Mat& tile, Mat& featureMat, Mat& pointVector, int numOfPoints, int im)
+void calcPointPairsFeaturesTile(Mat& tile, Mat& featureMat, Mat& pointVector, int numOfPoints, int im, bool useNoise)
 {
 	int x1, y1, x2, y2;
 	//int n=0;
@@ -92,11 +92,21 @@ void calcPointPairsFeaturesTile(Mat& tile, Mat& featureMat, Mat& pointVector, in
 		y1 = pointVector.at<int>(i,1);
 		x2 = pointVector.at<int>(i,2);
 		y2 = pointVector.at<int>(i,3);
-		if(tile.at<uchar>(y1,x1) > tile.at<uchar>(y2,x2))
-			featureMat.at<float>(im, i) = 1;
-		else if(tile.at<uchar>(y1,x1) < tile.at<uchar>(y2,x2))
-			featureMat.at<float>(im,i) = -1;
 
+		if(useNoise)
+		{
+			if(tile.at<uchar>(y1,x1) > tile.at<uchar>(y2,x2))
+				featureMat.at<float>(im, i) = 1;
+			else if(tile.at<uchar>(y1,x1) < tile.at<uchar>(y2,x2))
+				featureMat.at<float>(im,i) = -1;
+		}
+		else
+		{
+			if(tile.at<uchar>(y1,x1) > tile.at<uchar>(y2,x2) + 10)
+				featureMat.at<float>(im, i) = 1;
+			else if(tile.at<uchar>(y1,x1) < tile.at<uchar>(y2,x2) - 10)
+				featureMat.at<float>(im,i) = -1;
+		}
 		//if(featureMat.at<float>(im,i) != 0)
 			//n++;
 	}
@@ -139,10 +149,10 @@ void calcLinesFeaturesTile(Mat& tile, Mat& featureMat, Mat& pointVector, int num
 	}
 }
 
-Mat calcFeaturesTraining(RandomCharacters trainingData, int numOfPoints, string featureType)
+Mat calcFeaturesTraining(RandomCharacters trainingData, int numOfPoints, string featureType, float downSample, bool useNoise)
 {
-	int width = trainingData.randChars[0]->size().width;
-	int height = trainingData.randChars[0]->size().height;
+	int width = 128; //trainingData.randChars[0]->size().width;
+	int height = 128; //trainingData.randChars[0]->size().height;
 	int numOfCharacters = trainingData.randChars.size();
 
 	if(featureType == "rects")
@@ -182,15 +192,15 @@ Mat calcFeaturesTraining(RandomCharacters trainingData, int numOfPoints, string 
 				y2 = rng.uniform(0,height);
 			}
 
-			pointPairVector.at<int>(i,0) = x1;
-			pointPairVector.at<int>(i,1) = y1;
-			pointPairVector.at<int>(i,2) = x2;
-			pointPairVector.at<int>(i,3) = y2;
+			pointPairVector.at<int>(i,0) = x1/downSample;
+			pointPairVector.at<int>(i,1) = y1/downSample;
+			pointPairVector.at<int>(i,2) = x2/downSample;
+			pointPairVector.at<int>(i,3) = y2/downSample;
 		}
 
 		for(int im=0; im<numOfCharacters; im++)
 		{ 
-			calcPointPairsFeaturesTile(*trainingData.randChars[im],featureMat,pointPairVector, numOfPoints, im);
+			calcPointPairsFeaturesTile(*trainingData.randChars[im],featureMat,pointPairVector, numOfPoints, im, useNoise);
 		}
 
 		return featureMat;
@@ -226,7 +236,7 @@ Mat calcFeaturesTraining(RandomCharacters trainingData, int numOfPoints, string 
 
 		for(int im=0; im<numOfCharacters; im++)
 		{ 
-			calcPointPairsFeaturesTile(*trainingData.randChars[im],featureMat,LineVector, numOfPoints, im);
+			//calcPointPairsFeaturesTile(*trainingData.randChars[im],featureMat,LineVector, numOfPoints, im, downSample);
 		}
 
 		return featureMat;

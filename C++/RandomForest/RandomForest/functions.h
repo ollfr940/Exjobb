@@ -17,11 +17,28 @@
 #define FUNCTIONS_H
 
 void writeMatToFile(cv::Mat& m,cv::Mat& r,int imageNum, const char* filename);
-RandomCharacters produceData(int numOfChars, int charSize, std::string type,double angle, int charDiv, int charOrg, double fontSize, int numOfClasses, bool falseClass);
-void evaluateResult(std::vector<cv::Mat*> predictions,RandomCharactersImages& randIms, int imageWidth, int imageHeight, int charSizeX, int charSizeY, int numOfImages, int overlap, int upSample);
-std::vector<cv::Mat*> predictImages(RandomCharactersImages& randIms, std::vector<CvRTrees*> forestVector,int imNum, int imageWidth, int imageHeight, int charSizeX, int charSizeY, int overlap,int numOfTrees,double desicionThres, int numOfPointPairs, std::string charType, std::string featureType);
-RandomCharactersImages createTestImages(int numOfImages, int numOfChars, int charSize, int imageWidth,int imageHeight, std::string type,double angle, double fontSize, int numOfClasses);
+
+RandomCharacters produceData(int numOfChars, int charSize, std::string type,double angle, int charDivX, int charDivY, int charOrg, 
+	double fontSize, int numOfClasses, bool falseClass, bool useNoise);
+
+void evaluateResult(std::vector<cv::Mat*> predictions,RandomCharactersImages& randIms, int imageWidth, int imageHeight, int charSizeX, int charSizeY,
+	int numOfImages, int overlap, float downSample);
+
+std::vector<cv::Mat*> predictImages(RandomCharactersImages& randIms, std::vector<CvRTrees*> forestVector,int imNum, int imageWidth, int imageHeight, int charSizeX, 
+	int charSizeY, int overlap,int numOfTrees,double desicionThres, int numOfPointPairs, std::string charType, std::string featureType, float downSample, bool useNoise);
+
+RandomCharactersImages createTestImages(int numOfImages, int numOfChars, int charSize, int imageWidth,int imageHeight, std::string type,double angle, 
+	double fontSize, int numOfClasses);
+
 RandomCharacters produceDataFromImage(std::vector<cv::Rect*> boxVec, std::vector<char> boxRes, int numOfCharacters, double angle, cv::Mat& image, bool useRealIm);
-void evaluateIm(std::vector<CvRTrees*> tree, int testNum, int imageSize,std::string type, std::string featureType,int charDiv, int charOrg,int fontSize, int numOfClasses, int numOfPoints, double angle, int numOfTrees, double threshold, bool falseClass);
+
+void evaluateIm(std::vector<CvRTrees*> forestVector, int testNum, int imageSize,std::string type, std::string featureType,int charDivX, int charDivY, int charOrg,
+	int fontSize, int numOfClasses, int numOfPoints, double angle, int numOfTrees, double threshold,bool falseClass, bool useAfont, float downSample, bool useNoise);
+
+RandomCharacters produceDataFromAfont(int numOfChars, int numOfClasses, int numOfFalseData, int charDivX, int charDivY, double angle, bool falseClass
+	, float downSample,bool useNoise);
+
+RandomCharactersImages createTestImagesAfont(int numOfImages, int numOfChars, int charSize, int charDivX, int charDivY, int imageWidth, int imageHeight, 
+	std::string type,double angle, double fontSize, int numOfClasses, float downSample,bool useNoise);
 
 #endif

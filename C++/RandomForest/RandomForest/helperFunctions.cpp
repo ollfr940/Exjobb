@@ -3,6 +3,18 @@
 using namespace std;
 using namespace cv;
 
+vector<CvRTrees*> loadForests(int numOfForests, int maxDepth, int maxNumOfTreesInForest, int numOfChars,int numOfClasses, int charSize, int angle, string charType, string featureType, bool falseClass)
+{
+	vector<CvRTrees*> forestVector;
+	for(int i=0; i<numOfForests; i++)
+		{
+			forestVector.push_back(new CvRTrees);
+			cout << "loading: " << intToStr(i,numOfChars,numOfClasses,charSize,maxDepth,maxNumOfTreesInForest,angle,charType,featureType,falseClass,false) << endl << endl;
+			forestVector[i]->load(intToStr(i,numOfChars,numOfClasses,charSize,maxDepth,maxNumOfTreesInForest,angle,charType,featureType,falseClass,false).c_str());
+		}
+	return forestVector;
+}		
+
 int calcRectFiltNum(int charSizeX, int charSizeY)
 {
 	int filtNum = 0;
@@ -119,6 +131,65 @@ void mouseCallback( int event, int x, int y, int flags, void* param )
 		cin >> character;
 		cout << endl << endl;
 		boxResponses.push_back(character);
+	}
+	break;
+
+	default:
+		break;
+	}
+}
+
+void drawSquareToAdjustImage( int event, int x, int y, int flags, void* param )
+{
+	Mat* frame = (Mat*) param;
+	Rect *saveBox;
+	char character;
+
+	switch( event )
+	{
+	case CV_EVENT_MOUSEMOVE:
+		{
+			if( drawing_box )
+			{
+				box.width = x-box.x;
+				box.height = y-box.y;
+			}
+		}
+	break;
+
+	case CV_EVENT_LBUTTONDOWN:
+	{   
+		drawing_box = true;
+		box = Rect( x, y, 0, 0 );
+	}
+	break;
+
+	case CV_EVENT_LBUTTONUP:
+	{  
+		drawing_box = false;
+		
+		if( box.width < 0 )
+		{   
+			box.x += box.width;
+			box.width *= -1;      
+		}
+
+		if( box.height < 0 )
+		{   
+			box.y += box.height;
+			box.height *= -1; 
+		}
+
+		if(box.height > box.width)
+			box.width = box.height;
+		else
+			box.height = box.width;
+
+		saveBox = new Rect(box);
+		if(!boxVector.empty())
+			boxVector.pop_back();
+		boxVector.push_back(saveBox);
+		draw_box(frame, box);
 	}
 	break;
 
