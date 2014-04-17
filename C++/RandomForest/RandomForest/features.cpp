@@ -102,9 +102,9 @@ void calcPointPairsFeaturesTile(Mat& tile, Mat& featureMat, Mat& pointVector, in
 		}
 		else
 		{
-			if(tile.at<uchar>(y1,x1) > tile.at<uchar>(y2,x2) + 10)
+			if(tile.at<uchar>(y1,x1) > tile.at<uchar>(y2,x2) + 30)
 				featureMat.at<float>(im, i) = 1;
-			else if(tile.at<uchar>(y1,x1) < tile.at<uchar>(y2,x2) - 10)
+			else if(tile.at<uchar>(y1,x1) < tile.at<uchar>(y2,x2) - 30)
 				featureMat.at<float>(im,i) = -1;
 		}
 		//if(featureMat.at<float>(im,i) != 0)
@@ -137,7 +137,7 @@ void calcLinesFeaturesTile(Mat& tile, Mat& featureMat, Mat& pointVector, int num
 		}
 		for(; x<x2; x++)
 		{
-			y = k*x + m;
+			y = static_cast<int>(k*x + m);
 			if(tile.at<uchar>(x,y) == 0 && v)
 			{
 				featureMat.at<float>(im,i)++;
@@ -149,11 +149,11 @@ void calcLinesFeaturesTile(Mat& tile, Mat& featureMat, Mat& pointVector, int num
 	}
 }
 
-Mat calcFeaturesTraining(RandomCharacters trainingData, int numOfPoints, string featureType, float downSample, bool useNoise)
+Mat calcFeaturesTraining(RandomCharacters trainingData, int numOfPoints, string featureType, int downSample, bool useNoise)
 {
 	int width = 128; //trainingData.randChars[0]->size().width;
 	int height = 128; //trainingData.randChars[0]->size().height;
-	int numOfCharacters = trainingData.randChars.size();
+	int numOfCharacters = static_cast<int>(trainingData.randChars.size());
 
 	if(featureType == "rects")
 	{

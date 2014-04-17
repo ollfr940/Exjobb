@@ -3,15 +3,140 @@
 using namespace std;
 using namespace cv;
 
-vector<CvRTrees*> loadForests(int numOfForests, int maxDepth, int maxNumOfTreesInForest, int numOfChars,int numOfClasses, int charSize, int angle, string charType, string featureType, bool falseClass)
+int calcMaxIndex(Mat& matrix, int numOfValues)
+{
+	int maxPred = 0;
+	int maxPredIndex = 0;
+	Mat histMat = Mat::zeros(numOfValues,1,CV_32SC1);
+
+	for(int x=0; x<matrix.rows; x++)
+	{
+		for(int y=0; y<matrix.rows; y++)
+		{
+			histMat.at<int>(matrix.at<uchar>(y,x),0)++;
+		}
+	}
+
+	for(int i=0; i<numOfValues; i++)
+	{
+		if(histMat.at<int>(i,0) > maxPred)
+		{
+			maxPred = histMat.at<int>(i,0);
+			maxPredIndex = i;
+		}
+	}
+	return maxPredIndex;
+}
+
+void calcClusters(Mat& predictions, Mat& visulizeClusters, Mat& responses, int connectionThres, int imageWidth, int imageHeight, int charSize, int fontSize, int minCluster,int overlapTileX, int overlapTileY)
+{
+	printf("Detecting Clusters....\n\n");
+	int clusterNum = 0;
+	char clusterFound = 0;
+	vector<int> clusterSize;
+	string charStr;
+	Point org;
+	org.x = 10;
+	org.y = charSize-25;
+	Mat imRect, responseRect;
+	Mat clusters = Mat::zeros(predictions.size(), CV_8UC1);
+	int xIndex, yIndex, maxPred, maxPredIndex, maxResponseIndx;
+	Mat predInClusters;
+
+	for(int y=0; y<predictions.rows; y++)
+	{
+		for(int x=0; x<predictions.cols; x++)
+		{
+			if(predictions.at<uchar>(y,x))
+			{
+				clusterFound = 0;
+				for(int yy=y-connectionThres; yy<=y; yy++)
+				{
+					for(int xx=x-connectionThres; xx<=x; xx++)
+					{
+						if(yy >=0 && xx >=0 && !(y==yy && x==xx))
+						{
+							if(clusters.at<uchar>(yy,xx))
+								clusterFound = clusters.at<uchar>(yy,xx);
+						}
+					}
+				}
+				if(clusterFound)
+				{
+					clusters.at<uchar>(y,x) = clusterFound;
+					clusterSize[clusterFound-1]++;
+				}
+				else
+				{
+					clusterNum++;
+					clusters.at<uchar>(y,x) = clusterNum;
+					clusterSize.push_back(1);
+				}
+			}
+		}
+	}
+
+	for(int i=1; i<=clusterNum; i++)
+	{
+		predInClusters = Mat::zeros(256,1,CV_32SC1);
+		if(clusterSize[i-1] >= minCluster)
+		{
+			xIndex = 1000000;
+			yIndex = 1000000;
+
+			for(int y=0; y<predictions.rows; y++)
+			{
+				for(int x=0; x<predictions.cols; x++)
+				{
+					if(clusters.at<uchar>(y,x) == (int)i)
+					{
+						predInClusters.at<int>((int)predictions.at<uchar>(y,x),0)++;
+						if(x < xIndex)
+							xIndex = x;
+						if(y < yIndex)
+							yIndex = y;
+					}
+				}
+			}
+
+			maxPred = 0;
+			maxPredIndex = 0;
+			for(int j=0; j<256; j++)
+			{
+				if(predInClusters.at<int>(j,0) > maxPred)
+				{
+					maxPred = predInClusters.at<int>(j,0);
+					maxPredIndex = j;
+				}
+			}
+
+			responseRect = responses(Rect(xIndex*overlapTileX,yIndex*overlapTileY,charSize,charSize));
+			maxResponseIndx = calcMaxIndex(responseRect,256);
+			charStr = (char)maxPredIndex;
+
+			imRect = Mat::zeros(charSize,charSize,CV_8UC3);
+			add(imRect,255,imRect);
+			
+			if(maxPredIndex == maxResponseIndx)
+				putText(imRect,charStr,org, 0, fontSize ,CV_RGB(0,255,0),4, 8,false);
+			else
+				putText(imRect,charStr,org, 0, fontSize ,CV_RGB(255,0,0),4, 8,false);
+
+			imRect.copyTo(visulizeClusters(Rect(xIndex*overlapTileX,yIndex*overlapTileY,charSize,charSize)));
+		}
+	}
+}
+
+
+vector<CvRTrees*> loadForests(int numOfForests, int maxDepth, int maxNumOfTreesInForest, int numOfChars, int charSize, double angle, string charType, string featureType, bool falseClass, bool useNoise, bool useAfont)
 {
 	vector<CvRTrees*> forestVector;
 	for(int i=0; i<numOfForests; i++)
-		{
-			forestVector.push_back(new CvRTrees);
-			cout << "loading: " << intToStr(i,numOfChars,numOfClasses,charSize,maxDepth,maxNumOfTreesInForest,angle,charType,featureType,falseClass,false) << endl << endl;
-			forestVector[i]->load(intToStr(i,numOfChars,numOfClasses,charSize,maxDepth,maxNumOfTreesInForest,angle,charType,featureType,falseClass,false).c_str());
-		}
+	{
+		forestVector.push_back(new CvRTrees);
+		cout << "loading: " << intToStr(i,numOfChars,charSize,maxDepth,maxNumOfTreesInForest,angle,charType,featureType,falseClass,false,useNoise, useAfont) << endl << endl;
+		forestVector[i]->load(intToStr(i,numOfChars,charSize,maxDepth,maxNumOfTreesInForest,angle,charType,featureType,falseClass,false,useNoise, useAfont).c_str());
+	}
 	return forestVector;
 }		
 
@@ -30,10 +155,9 @@ int calcRectFiltNum(int charSizeX, int charSizeY)
 	return filtNum*17;
 }
 
-string intToStr(int i, int numOfChars,int numOfClasses, int charSize, int depth, int treeNum, int angle, string charType, string featureType, bool falseClass, bool n)
+string intToStr(int i, int numOfChars, int charSize, int depth, int treeNum, double angle, string charType, string featureType, bool falseClass, bool n, bool useNoise, bool useAfont)
 {
-	stringstream s1, s2, s3, s4, s5, s6, s7;
-	string ret1 = "";
+	stringstream s2, s3, s4, s5, s6, s7;
 	string ret2 = "";
 	string ret3 = "";
 	string ret4 = "";
@@ -43,7 +167,6 @@ string intToStr(int i, int numOfChars,int numOfClasses, int charSize, int depth,
 	string name;
 	string mapName;
 
-	s1 << numOfClasses; s1 >> ret1;
 	s2 << numOfChars; s2 >> ret2;
 	s3 << i; s3 >> ret3;
 	s4 << depth; s4 >> ret4;
@@ -51,19 +174,19 @@ string intToStr(int i, int numOfChars,int numOfClasses, int charSize, int depth,
 	s6 << angle; s6 >> ret6;
 	s7 << charSize; s7 >> ret7;
 
+	mapName = "C:\\Users\\tfridol\\git\\Exjobb\\C++\\RandomForest\\RandomForest\\" + charType + "_" + featureType + "_DataForEachClass" + 
+		ret2 + "_imageSize" + ret7 + "_depth" + ret4 + "_treeNum" + ret5 + "_angle" + ret6;
+
+	if(useAfont)
+		mapName += "_Afont";
 	if(falseClass)
-	{
-		mapName = "C:\\Users\\tfridol\\git\\Exjobb\\C++\\RandomForest\\RandomForest\\" + charType + "_" + featureType + "_NumOfData" + 
-			ret1 + "x" + ret2 + "_imageSize" + ret7 + "_depth" + ret4 + "_treeNum" + ret5 + "_angle" + ret6 + "_usingFalseClass";
-	}
-	else
-	{
-		mapName = "C:\\Users\\tfridol\\git\\Exjobb\\C++\\RandomForest\\RandomForest\\" + charType + "_" + featureType + "_NumOfData" + 
-			ret1 + "x" + ret2 + "_imageSize" + ret7 + "_depth" + ret4 + "_treeNum" + ret5 + "_angle" + ret6;
-	}
+		mapName += "_usingFalseClass";
+
+	if(useNoise)
+		mapName += "_withNoise";
 
 	if(n)
-	CreateDirectoryA(mapName.c_str(),NULL);
+		CreateDirectoryA(mapName.c_str(),NULL);
 	name = mapName + "\\" +"Forest" + "_" + ret3 + ".xml";
 	//name = charType + "_" + featureType + "_NumOfData " + ret1 + "x" + ret2 + "_" + ret3 + ".xml";
 	//name = "C:\\Users\\tfridol\\git\\Exjobb\\C++\\RandomForest\\RandomForest\\uppercase_rects_NumOfData 5200\\uppercase_NumOfData 5200_" + ret3 + ".xml";
@@ -91,48 +214,48 @@ void mouseCallback( int event, int x, int y, int flags, void* param )
 				firstBoxHeight = box.height;
 			}
 		}
-	break;
+		break;
 
 	case CV_EVENT_LBUTTONDOWN:
-	{   
-		drawing_box = true;
-		box = Rect( x, y, 0, 0 );
-	}
-	break;
+		{   
+			drawing_box = true;
+			box = Rect( x, y, 0, 0 );
+		}
+		break;
 
 	case CV_EVENT_LBUTTONUP:
-	{  
-		drawing_box = false;
-		
-		if( box.width < 0 )
-		{   
-			box.x += box.width;
-			box.width *= -1;      
-		}
+		{  
+			drawing_box = false;
 
-		if( box.height < 0 )
-		{   
-			box.y += box.height;
-			box.height *= -1; 
+			if( box.width < 0 )
+			{   
+				box.x += box.width;
+				box.width *= -1;      
+			}
+
+			if( box.height < 0 )
+			{   
+				box.y += box.height;
+				box.height *= -1; 
+			}
+			if(firstBox)
+				firstBox = false;
+			else
+			{
+				box.x += (box.width - firstBoxWidth)/2;
+				box.y += (box.height - firstBoxHeight)/2;
+				box.width = firstBoxWidth;
+				box.height = firstBoxHeight;
+			}
+			saveBox = new Rect(box);
+			boxVector.push_back(saveBox);
+			draw_box(frame, box);
+			cout << "Type the character and press Enter: ";
+			cin >> character;
+			cout << endl << endl;
+			boxResponses.push_back(character);
 		}
-		if(firstBox)
-			firstBox = false;
-		else
-		{
-			box.x += (box.width - firstBoxWidth)/2;
-			box.y += (box.height - firstBoxHeight)/2;
-			box.width = firstBoxWidth;
-			box.height = firstBoxHeight;
-		}
-		saveBox = new Rect(box);
-		boxVector.push_back(saveBox);
-		draw_box(frame, box);
-		cout << "Type the character and press Enter: ";
-		cin >> character;
-		cout << endl << endl;
-		boxResponses.push_back(character);
-	}
-	break;
+		break;
 
 	default:
 		break;
@@ -143,7 +266,6 @@ void drawSquareToAdjustImage( int event, int x, int y, int flags, void* param )
 {
 	Mat* frame = (Mat*) param;
 	Rect *saveBox;
-	char character;
 
 	switch( event )
 	{
@@ -155,43 +277,43 @@ void drawSquareToAdjustImage( int event, int x, int y, int flags, void* param )
 				box.height = y-box.y;
 			}
 		}
-	break;
+		break;
 
 	case CV_EVENT_LBUTTONDOWN:
-	{   
-		drawing_box = true;
-		box = Rect( x, y, 0, 0 );
-	}
-	break;
+		{   
+			drawing_box = true;
+			box = Rect( x, y, 0, 0 );
+		}
+		break;
 
 	case CV_EVENT_LBUTTONUP:
-	{  
-		drawing_box = false;
-		
-		if( box.width < 0 )
-		{   
-			box.x += box.width;
-			box.width *= -1;      
+		{  
+			drawing_box = false;
+
+			if( box.width < 0 )
+			{   
+				box.x += box.width;
+				box.width *= -1;      
+			}
+
+			if( box.height < 0 )
+			{   
+				box.y += box.height;
+				box.height *= -1; 
+			}
+
+			if(box.height > box.width)
+				box.width = box.height;
+			else
+				box.height = box.width;
+
+			saveBox = new Rect(box);
+			if(!boxVector.empty())
+				boxVector.pop_back();
+			boxVector.push_back(saveBox);
+			draw_box(frame, box);
 		}
-
-		if( box.height < 0 )
-		{   
-			box.y += box.height;
-			box.height *= -1; 
-		}
-
-		if(box.height > box.width)
-			box.width = box.height;
-		else
-			box.height = box.width;
-
-		saveBox = new Rect(box);
-		if(!boxVector.empty())
-			boxVector.pop_back();
-		boxVector.push_back(saveBox);
-		draw_box(frame, box);
-	}
-	break;
+		break;
 
 	default:
 		break;
@@ -201,9 +323,9 @@ void drawSquareToAdjustImage( int event, int x, int y, int flags, void* param )
 
 void draw_box(Mat * img, Rect rect)
 {
-  rectangle(*img, Point(box.x, box.y), Point(box.x+box.width,box.y+box.height),Scalar(0,0,255) ,2);
+	rectangle(*img, Point(box.x, box.y), Point(box.x+box.width,box.y+box.height),Scalar(0,0,255) ,2);
 
-  Rect rect2=Rect(box.x,box.y,box.width,box.height);
+	Rect rect2=Rect(box.x,box.y,box.width,box.height);
 }
 
 void writeSizeToFile(int imSizeX, int imSizeY, const char* filename)
@@ -230,7 +352,7 @@ void createAndSavePointPairs(int numOfPoints, int width, int height, string file
 	/*std::ofstream fout(filename);
 	if(!fout)
 	{
-		std::cout<<"File Not Opened"<<std::endl;  return;
+	std::cout<<"File Not Opened"<<std::endl;  return;
 	}*/
 	printf("Create random point pairs and save to file....\n\n");
 	Mat pointPairVector = Mat::zeros(numOfPoints,4,CV_32SC1);
@@ -298,14 +420,14 @@ void preProcessRect(Mat& image, double threshold)
 {
 	cv::threshold(image, image, threshold, 255,0);
 }
-
+/*
 RandomCharacters produceProxData(string type, int numOfClasses, int charSize, double fontSize)
 {
 	RandomCharacters v;
 	Mat* image;
 	char d;
 	string dstr;
-	if(type == "numbers")
+	if(type == "digits")
 		d = '0';
 	else if(type == "uppercase")
 		d = 'A';
@@ -330,4 +452,4 @@ RandomCharacters produceProxData(string type, int numOfClasses, int charSize, do
 		//cv::waitKey();
 	}
 	return v;
-}
+}*/

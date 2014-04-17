@@ -4,15 +4,10 @@
 using namespace std;
 using namespace cv;
 
-
-RandomCharacters produceData(int numOfChars, int charSize, string type,double angle, int charDivX, int charDivY, int charOrg, double fontSize, int numOfClasses, bool falseClass, bool useNoise)
+/*
+RandomCharacters produceData(int numOfChars, int charSize, string type,double angle, int charDivX, int charDivY, int charOrg, double fontSize, bool falseClass, bool useNoise)
 {
 	printf("Produce data....\n\n");
-	RandomCharacters chars;
-	if(falseClass)
-		chars.responses = Mat::zeros(numOfChars*(numOfClasses+1),1,CV_32SC1);
-	else
-		chars.responses = Mat::zeros(numOfChars*numOfClasses,1,CV_32SC1);
 
 	Mat* image;
 	uint64 initValue = time(0);
@@ -20,22 +15,42 @@ RandomCharacters produceData(int numOfChars, int charSize, string type,double an
 	double randomAngle, scale = 1.0;
 	char d, dd, randd;
 	string dstr;
+	int numOfDataForEachClass;
 
-	if(type == "numbers")
+	if(type == "digits")
+	{
 		d = '0';
+		numOfDataForEachClass = 10;
+	}
 	else if(type == "uppercase")
+	{
 		d = 'A';
+		numOfDataForEachClass = 26;
+	}
 	else if(type == "lowercase")
+	{
 		d = 'a';
+		numOfDataForEachClass = 26;
+	}
+	else if(type == "digitsAndLetters")
+	{
+		d = '0';
+		numOfDataForEachClass = 36;
+	}
 	else
 	{
 		printf("error");
 		abort();
 	}
 
+	RandomCharacters chars;
+	if(falseClass)
+		chars.responses = Mat::zeros(numOfChars*(numOfDataForEachClass+1),1,CV_32SC1);
+	else
+		chars.responses = Mat::zeros(numOfChars*numOfDataForEachClass,1,CV_32SC1);
 	dd = d;
 
-	for(int i=0; i<numOfClasses; i++)
+	for(int i=0; i<numOfDataForEachClass; i++)
 	{
 		for(int c=0; c<numOfChars; c++)
 		{
@@ -47,20 +62,6 @@ RandomCharacters produceData(int numOfChars, int charSize, string type,double an
 			if(useNoise)
 				randn(*image,50,30);
 			cv::Point org;
-			
-			/*while(sum(image->col(1))(0) != charSize*255 ||  sum(image->col(charSize-2))(0) != charSize*255 || sum(image->row(1))(0) != charSize*255 || sum(image->row(charSize-2))(0) != charSize*255)
-			{
-				*image = Mat::zeros(charSize,charSize,CV_8UC1);
-				cv::add(*image,255,*image);
-				org.x = rng.uniform(0,charSize-10);
-				org.y = rng.uniform(charSize/2,charSize);
-				dstr = dd;
-				randomAngle = rng.uniform(-angle,angle);
-				cv::putText(*image,dstr , org, 0, fontSize ,0, 10, 8,false);
-				rotate(*image,randomAngle,charSize,charSize,scale);
-				//cv::imshow("im", *image);
-				//cv::waitKey();
-			}*/
 			
 			if(dd == 'I')
 			{
@@ -77,10 +78,15 @@ RandomCharacters produceData(int numOfChars, int charSize, string type,double an
 			cv::putText(*image,dstr , org, 0, fontSize ,0, 10, 8,false);
 			rotate(*image,randomAngle,charSize,charSize,scale);
 			chars.randChars.push_back(image);
-			cv::imshow("im", *image);
-			cv::waitKey();
+			//cv::imshow("im", *image);
+			//cv::waitKey();
 		}
-		dd++;
+		if(d =='9')
+			d = 'A';
+		else if(d == 'Z')
+			d = 'a';
+		else
+			dd++;
 	}
 	
 	if(falseClass)
@@ -91,14 +97,14 @@ RandomCharacters produceData(int numOfChars, int charSize, string type,double an
 
 		for(int i=0; i<numOfChars; i++)
 		{
-			chars.responses.at<int>(numOfClasses*numOfChars+i,0) = 0;
+			chars.responses.at<int>(numOfDataForEachClass*numOfChars+i,0) = 0;
 			image = new Mat(Mat::zeros(charSize,charSize,CV_8UC1));
 			cv::add(*image,255,*image);	
 			if(useNoise)
 				randn(*image,50,30);
 
-			d1 = rng.uniform(d,d+numOfClasses);
-			d2 = rng.uniform(d,d+numOfClasses);
+			d1 = rng.uniform(d,d+numOfDataForEachClass);
+			d2 = rng.uniform(d,d+numOfDataForEachClass);
 			dstr1 = d1;
 			dstr2 = d2;
 
@@ -119,7 +125,7 @@ RandomCharacters produceData(int numOfChars, int charSize, string type,double an
 
 	return chars;
 }
-
+*/
 RandomCharacters produceDataFromImage(vector<Rect*> boxVec, vector<char> boxRes, int numOfCharacters, double angle, Mat& image, bool useRealIm)
 {
 	printf("Produce data from image....\n\n");
@@ -131,7 +137,7 @@ RandomCharacters produceDataFromImage(vector<Rect*> boxVec, vector<char> boxRes,
 	int	width = boxVector[0]->width;
 	int	height = boxVector[0]->height;
 	double randomAngle, scale = 1.0;
-	chars.responses = Mat::zeros(boxVector.size()*numOfCharacters,1,CV_32SC1);
+	chars.responses = Mat::zeros((int)boxVector.size()*numOfCharacters,1,CV_32SC1);
 
 	for(int i=0; i<boxVector.size(); i++)
 	{
@@ -172,28 +178,55 @@ RandomCharacters produceDataFromImage(vector<Rect*> boxVec, vector<char> boxRes,
 	return chars;
 }
 
-RandomCharacters produceDataFromAfont(int numOfChars, int numOfClasses, int numOfFalseData, int charDivX, int charDivY, double angle, bool falseClass, float downSample, bool useNoise)
+RandomCharacters produceDataFromAfont(int numOfChars, string type, int numOfFalseData, int charDivX, int charDivY, double angle, bool falseClass, int downSample, bool useNoise)
 {
 	printf("Produce data from OCR A-font....\n\n");
 	uint64 initValue = time(0);
 	RNG rng(initValue);
+	int numOfDataForEachClass;
 	RandomCharacters chars;
+	char d;
+
+	if(type == "digits")
+	{
+		d = '0';
+		numOfDataForEachClass = 10;
+	}
+	else if(type == "uppercase")
+	{
+		d = 'A';
+		numOfDataForEachClass = 26;
+	}
+	else if(type == "lowercase")
+	{
+		d = 'a';
+		numOfDataForEachClass = 26;
+	}
+	else if(type == "digitsAndLetters")
+	{
+		d = '0';
+		numOfDataForEachClass = 36;
+	}
+	else
+	{
+		printf("error");
+		abort();
+	}
 
 	if(falseClass)
-		chars.responses = Mat::zeros(numOfFalseData+numOfClasses*numOfChars,1,CV_32SC1);
+		chars.responses = Mat::zeros(numOfFalseData+numOfDataForEachClass*numOfChars,1,CV_32SC1);
 	else
-		chars.responses = Mat::zeros(numOfClasses*numOfChars,1,CV_32SC1);
+		chars.responses = Mat::zeros(numOfDataForEachClass*numOfChars,1,CV_32SC1);
 
 	Mat* imRect, *imRectDownSampled,imCopy, imCopy1, imCopy2, imCopyTrans;
-	int x, y, x1, y1, x2, y2;
+	int x, y, x1, y1, x2, y2, typeOfFalseData;
 	int	width = 128;
 	int	height = 128;
 	double randomAngle, scale = 1.0;
-	char d = 'A';
 	char d1, d2;
 	string dstr, dstr1, dstr2, *name, *name1, *name2;
 
-	for(int i=0; i<numOfClasses; i++)
+	for(int i=0; i<numOfDataForEachClass; i++)
 	{
 		dstr = d;
 		name = new string("C:\\Users\\tfridol\\git\\Exjobb\\C++\\RandomForest\\RandomForest\\OCRAFont\\" + dstr+".png");
@@ -204,6 +237,8 @@ RandomCharacters produceDataFromAfont(int numOfChars, int numOfClasses, int numO
 			imRect = new Mat(Mat::zeros(height,width,CV_8UC1));
 			imRectDownSampled = new Mat(Mat::zeros(height/downSample,width/downSample,CV_8UC1));
 			add(*imRectDownSampled,255,*imRectDownSampled);
+			if(useNoise)
+				randn(*imRectDownSampled,200,30);
 			add(*imRect,255,*imRect);
 
 			x = rng.uniform(-10-charDivX,-10+charDivX);
@@ -220,23 +255,26 @@ RandomCharacters produceDataFromAfont(int numOfChars, int numOfClasses, int numO
 
 			randomAngle = rng.uniform(-angle,angle);
 			rotate(*imRect,randomAngle,width, height, scale);
-			if(useNoise)
-				randn(*imRect,200,30);
-			resize(*imRect,*imRectDownSampled,Size(width/downSample,height/downSample));
+			resize(*imRect,*imRect,Size(width/downSample,height/downSample));
+			threshold(*imRect,*imRect,128,1,CV_8UC1);
+			multiply(*imRect,*imRectDownSampled,*imRectDownSampled);
 			chars.randChars.push_back(imRectDownSampled);
 			chars.responses.at<int>(i*numOfChars+j,0) = (int)d;
-			cv::imshow("im", *imRectDownSampled);
-			cv::waitKey();
+			//cv::imshow("im", *imRectDownSampled);
+			//cv::waitKey();
 		}
-		d++;
+		if(d =='9')
+			d = 'A';
+		else
+			d++;
 	}
 
 	if(falseClass)
 	{
 		for(int i=0; i<numOfFalseData; i++)
 		{
-			d1 = d + rng.uniform(-numOfClasses,0);
-			d2 = d + rng.uniform(-numOfClasses,0);
+			d1 = d + rng.uniform(-26,-1);
+			d2 = d + rng.uniform(-26,-1);
 			dstr1 = d1;
 			dstr2 = d2;
 			name1 = new string("C:\\Users\\tfridol\\git\\Exjobb\\C++\\RandomForest\\RandomForest\\OCRAFont\\" + dstr1+".png");
@@ -247,28 +285,39 @@ RandomCharacters produceDataFromAfont(int numOfChars, int numOfClasses, int numO
 			imRectDownSampled = new Mat(Mat::zeros(height/downSample,width/downSample,CV_8UC1));
 			add(*imRectDownSampled,255,*imRectDownSampled);
 			if(useNoise)
-				randn(*imRectDownSampled,50,30);
+				randn(*imRectDownSampled,200,30);
 			add(*imRect,255,*imRect);
 			x1 = 80;
 			y1 = 10;
 			x2 = -80;
 			y2 = 10;
+			
+			typeOfFalseData = rng.uniform(0,3);
 
-			imCopy1(Rect(x1,y1, width-x1, height-y1)).copyTo((*imRect)(Rect(0,0,width-x1, height-y1))); 
-			imCopy2(Rect(0,y2, width+x2, height-y2)).copyTo((*imRect)(Rect(-x2,0,width+x2, height-y2))); 
+			if(typeOfFalseData == 0)
+				imCopy1(Rect(x1,y1, width-x1, height-y1)).copyTo((*imRect)(Rect(0,0,width-x1, height-y1)));
+			else if(typeOfFalseData == 1)
+				imCopy2(Rect(0,y2, width+x2, height-y2)).copyTo((*imRect)(Rect(-x2,0,width+x2, height-y2))); 
+			else
+			{
+				imCopy1(Rect(x1,y1, width-x1, height-y1)).copyTo((*imRect)(Rect(0,0,width-x1, height-y1)));
+				imCopy2(Rect(0,y2, width+x2, height-y2)).copyTo((*imRect)(Rect(-x2,0,width+x2, height-y2)));
+			}
 
 			randomAngle = rng.uniform(-angle,angle);
 			rotate(*imRect,randomAngle,width, height, scale);
-			resize(*imRect,*imRectDownSampled,Size(width/downSample,height/downSample));
+			resize(*imRect,*imRect,Size(width/downSample,height/downSample));
+			threshold(*imRect,*imRect,128,1,CV_8UC1);
+			multiply(*imRect,*imRectDownSampled,*imRectDownSampled);
 			chars.randChars.push_back(imRectDownSampled);
-			chars.responses.at<int>(numOfClasses*numOfChars+i,0) = 0;
+			chars.responses.at<int>(numOfDataForEachClass*numOfChars+i,0) = 0;
 			//cv::imshow("im", *imRectDownSampled);
 			//cv::waitKey();
 		}
 	}
 	return chars;
 }
-
+/*
 RandomCharactersImages createTestImages(int numOfImages, int numOfChars, int charSize, int imageWidth, int imageHeight, string type,double angle, double fontSize, int numOfClasses)
 {
 	printf("Create test images....\n\n");
@@ -282,7 +331,7 @@ RandomCharactersImages createTestImages(int numOfImages, int numOfChars, int cha
 	char d, randd;
 	string dstr;
 
-	if(type == "numbers")
+	if(type == "digits")
 		d = '0';
 	else if(type == "uppercase")
 		d = 'A';
@@ -327,10 +376,10 @@ RandomCharactersImages createTestImages(int numOfImages, int numOfChars, int cha
 		charImages.responses.push_back(responses);
 	}
 	return charImages;
-}
+}*/
 
 RandomCharactersImages createTestImagesAfont(int numOfImages, int numOfChars, int charSize, int charDivX, int charDivY, int imageWidth, int imageHeight, string type,double angle, double fontSize, 
-	int numOfClasses, float downSample, bool useNoise)
+	string charType, int downSample, bool useNoise)
 {
 	printf("Create test images OCR A-font....\n\n");
 	RandomCharactersImages charImages;
@@ -340,17 +389,19 @@ RandomCharactersImages createTestImagesAfont(int numOfImages, int numOfChars, in
 	int charSizeDownSampled = charSize/downSample;
 	uint64 initValue = time(0);
 	cv::RNG rng(initValue);
-	double randomAngle, scale = 1.0;
+	double scale = 1.0;
 	char d;
 	string dstr;
 	d = 'A';
 
 	for(int im=0; im<numOfImages; im++)
 	{
-		RandomCharacters characters = produceDataFromAfont(numOfChars,numOfClasses,0,charDivX,charDivY,angle,false, downSample,useNoise);
+		RandomCharacters characters = produceDataFromAfont(numOfChars,charType,0,charDivX,charDivY,angle,false, downSample,useNoise);
 		image = new Mat(Mat::zeros(imageWidth,imageHeight,CV_8UC1));
 		responses = new Mat(Mat::zeros(imageWidth,imageHeight,CV_8UC1));
 		add(*image,255,*image);
+		if(useNoise)
+				randn(*image,200,30);
 
 		for(int c=0; c<numOfChars; c++)
 		{
@@ -359,7 +410,7 @@ RandomCharactersImages createTestImagesAfont(int numOfImages, int numOfChars, in
 
 			if(!sum((*responses)(Rect(xPos,yPos,charSizeDownSampled,charSizeDownSampled)))(0))
 			{
-				randd = rng.uniform(0,characters.randChars.size()-1);
+				randd = rng.uniform(0,(int)characters.randChars.size()-1);
 				characterRect = *characters.randChars[randd];
 				responseRect = Mat::zeros(charSizeDownSampled,charSizeDownSampled,CV_8UC1);
 				add(responseRect,(int)characters.responses.at<int>(randd,0),responseRect);
@@ -388,57 +439,31 @@ Mat createResponses(int trainingNum, int characters)
 	return responses;
 }
 
-/*
-Mat createRectFeatures(RandomCharacters trainingData)
-{
-	printf("Create rect features....\n\n");
-	CalcRectSample calcRect;
-	Mat integralIm, integralRect;
-	float p;
-	int width = trainingData.randChars[0]->size().width;
-	int height = trainingData.randChars[0]->size().height;
-	int rectFiltNum = calcRectFiltNum(width,height)+1;
-	int numOfCharacters = (int)trainingData.randChars.size();
-	Mat featureMat = Mat::zeros(numOfCharacters,rectFiltNum,CV_32FC1);
-	for(int im=0; im<numOfCharacters; im++)
-	{
-		width = trainingData.randChars[im]->size().width;
-		height = trainingData.randChars[im]->size().height;
-
-		int indx = 0; 
-		for(int rectx=0; rectx <8; rectx++)
-		{
-			for(int recty=0; recty <8; recty++)
-			{
-				int rectSizex = 12 + rectx*4;
-				int rectSizey = 12 + recty*4;
-				int rectNumx = width/rectSizex;
-				int rectNumy = height/rectSizey;
-
-				for(int i=0; i<rectNumx; i++)
-				{
-					for(int j=0; j<rectNumy; j++)
-					{
-						integral((*trainingData.randChars[im])(Rect(i*rectSizex,j*rectSizey,rectSizex,rectSizey)),integralRect,CV_32FC1);
-						calcRect.operator()(integralRect,featureMat,indx,rectSizex,rectSizey,im);
-					}
-				}
-			}
-		}
-
-	}
-	return featureMat;
-}*/
 
 
 void evaluateIm(vector<CvRTrees*> forestVector, int testNum, int imageSize,string type, string featureType,int charDivX, int charDivY, int charOrg,int fontSize,
-	int numOfClasses, int numOfPoints, double angle, int numOfTrees, double threshold, bool falseClass, bool useAfont, float downSample, bool useNoise)
+	string charType, int numOfPoints, double angle, int numOfTrees, double threshold, bool falseClass, bool useAfont, int downSample, bool useNoise)
 {
 	RandomCharacters testData;
 	if(useAfont)
-		testData = produceDataFromAfont(testNum,numOfClasses,0,charDivX,charDivY,angle,falseClass, downSample,useNoise);
+		testData = produceDataFromAfont(testNum, charType,0,charDivX,charDivY,angle,falseClass, downSample,useNoise);
+	//else
+		//testData = produceData(testNum,imageSize,type,angle,charDivX,charDivY,charOrg,fontSize, falseClass,useNoise);
+
+	int numOfDataForEachClass;
+	if(type == "digits")
+		numOfDataForEachClass = 10;
+	else if(type == "uppercase")
+		numOfDataForEachClass = 26;
+	else if(type == "lowercase")
+		numOfDataForEachClass = 26;
+	else if(type == "digitsAndLetters")
+		numOfDataForEachClass = 36;
 	else
-		testData = produceData(testNum,imageSize,type,angle,charDivX,charDivY,charOrg,fontSize,numOfClasses, falseClass,useNoise);
+	{
+		printf("error");
+		abort();
+	}
 
 	Mat testFeatures = calcFeaturesTraining(testData,numOfPoints,featureType,downSample,useNoise);
 	int truePred = 0;
@@ -453,20 +478,20 @@ void evaluateIm(vector<CvRTrees*> forestVector, int testNum, int imageSize,strin
 	printf("Calculate predictions....\n");
 	for(int im=0; im<testData.randChars.size(); im++)
 	{
-		//imshow("im",*testData.randChars[im]);
-		//waitKey();
+		imshow("im",*testData.randChars[im]);
+		waitKey();
 		treePred = Mat::zeros(256,1, CV_32SC1);
 		for(int f=0; f<numOfForests; f++)
 		{
 			for(int t=0; t<(int)numOfTrees; t++)
 			{
 				tree = forestVector[f]->get_tree(t);
-				treePred.at<int>(tree->predict(testFeatures.row(im))->value,0)++;
+				treePred.at<int>(static_cast<int>(tree->predict(testFeatures.row(im))->value),0)++;
 			}
 		}
 		cv::minMaxIdx(treePred,&minVal,&maxVal,minIndx,maxIndx);
 
-		//cout << (char)(*maxIndx) << "\t" << maxVal/(numOfForests*numOfTrees) << endl;
+		cout << (char)(*maxIndx) << "\t" << maxVal/(numOfForests*numOfTrees) << endl;
 		if(*maxIndx == testData.responses.at<int>(im,0))
 		{
 			truePred++;
@@ -474,9 +499,9 @@ void evaluateIm(vector<CvRTrees*> forestVector, int testNum, int imageSize,strin
 		}
 	}
 
-	cout << "Number of test images: " << testNum*numOfClasses << endl;
+	cout << "Number of test images: " << testNum*numOfDataForEachClass << endl;
 	cout << "True detections :" << truePred << endl;
-	cout << "Average amount of correct classifications: " << trueConf/(testNum*numOfClasses) << endl;
+	cout << "Average amount of correct classifications: " << trueConf/(testNum*numOfDataForEachClass) << endl;
 }
 /*
 vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> forestVector,int imNum, int imageWidth, int imageHeight, int charSizeX, int charSizeY, int overlap, int numOfTrees,double desicionThres, int numOfPointPairs, string charType, string featureType, float downSample)
@@ -615,7 +640,8 @@ vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> fo
 	return predictions;
 }*/
 
-vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> forestVector,int imNum, int imageWidth, int imageHeight, int charSizeX, int charSizeY, int overlap, int numOfTrees,double desicionThres, int numOfPointPairs, string charType, string featureType, float downSample,bool useNoise)
+vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> forestVector,int imNum, int imageWidth, int imageHeight, int charSizeX, int charSizeY, int overlap, 
+	int numOfTrees,double desicionThres, int numOfPointPairs, string charType, string featureType, int downSample,bool useNoise)
 {
 	printf("Detecting characters in images....\n\n");
 	//CalcRectSample calcRect;
@@ -630,7 +656,6 @@ vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> fo
 	int imRectUp,imRectDown, imRectMiddleHor, imRectMiddleVert, rectFiltNum;
 	vector<Mat*> predictions;
 	Mat* pred;
-	char proxIndx;
 	int tileNumX = imageWidth/charSizeXDownSampled*overlap - (overlap-1);
 	int tileNumY = imageHeight/charSizeYDownSampled*overlap - (overlap-1);
 
@@ -681,7 +706,7 @@ vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> fo
 	start = GetTickCount();
 	for(int im=0; im<imNum; im++)
 	{
-		pred = new Mat(Mat::zeros(tileNumX,tileNumY, CV_8UC1));
+		pred = new Mat(Mat::zeros(tileNumY,tileNumX, CV_8UC1));
 		predPosx = 0;
 		predPosy = 0;
 		for(int y=0; y<tileNumY; y++)
@@ -692,10 +717,10 @@ vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> fo
 				xPos = x*overlapTileY;
 				int rectArea = charSizeXDownSampled*charSizeYDownSampled*255;
 				imRect = (*randIms.randChars[im])(Rect(xPos,yPos,charSizeXDownSampled,charSizeYDownSampled));
-				imRectUp = sum(imRect(Rect(0,0,charSizeXDownSampled,charSizeYDownSampled/4)))(0);
-				imRectDown = sum(imRect(Rect(0,charSizeYDownSampled*3/4,charSizeXDownSampled,charSizeYDownSampled/4)))(0);
-				imRectMiddleHor = sum(imRect(Rect(0,charSizeYDownSampled*7/16,charSizeXDownSampled,charSizeYDownSampled/8)))(0);
-				imRectMiddleVert = sum(imRect(Rect(charSizeXDownSampled*7/16,0,charSizeXDownSampled/8, charSizeYDownSampled)))(0);
+				imRectUp = static_cast<int>(sum(imRect(Rect(0,0,charSizeXDownSampled,charSizeYDownSampled/4)))(0));
+				imRectDown = static_cast<int>(sum(imRect(Rect(0,charSizeYDownSampled*3/4,charSizeXDownSampled,charSizeYDownSampled/4)))(0));
+				imRectMiddleHor = static_cast<int>(sum(imRect(Rect(0,charSizeYDownSampled*7/16,charSizeXDownSampled,charSizeYDownSampled/8)))(0));
+				imRectMiddleVert = static_cast<int>(sum(imRect(Rect(charSizeXDownSampled*7/16,0,charSizeXDownSampled/8, charSizeYDownSampled)))(0));
 
 				if(imRectUp < rectArea/4 && imRectDown < rectArea/4 && imRectMiddleVert < rectArea/8 && imRectMiddleHor < rectArea/8)
 				{
@@ -720,13 +745,13 @@ vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> fo
 						for(int t=0; t<(int)numOfTrees; t++)
 						{
 							tree = forestVector[f]->get_tree(t);
-							treePred.at<int>(tree->predict(featureMat)->value,0)++;
+							treePred.at<int>(static_cast<int>(tree->predict(featureMat)->value),0)++;
 						}
 					}
 					cv::minMaxIdx(treePred,&minVal,&maxVal,minIndx,maxIndx);
 					//cout << (char)(*maxIndx) << "\t" << maxVal/(numOfForests*numOfTrees) << endl;
 					if(maxVal > numOfTrees*numOfForests*desicionThres)
-						pred->at<uchar>(predPosx,predPosy) = *maxIndx;
+						pred->at<uchar>(predPosy,predPosx) = *maxIndx;
 						
 				}
 				predPosx++;
@@ -738,7 +763,7 @@ vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> fo
 		predictions.push_back(pred);
 	}
 	stop = GetTickCount();
-	std::cout << "Average time per image: " << (float)(stop - start)/((float)imNum)/1000 << std::endl << std::endl; 
+	std::cout << "Average time per image: " << (float)(stop - start)/((float)imNum)/1000 << std::endl << std::endl;
 	return predictions;
 }
 
@@ -826,7 +851,8 @@ vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> fo
 	}
 }*/
 
-void evaluateResult(vector<Mat*> predictions, RandomCharactersImages& randIms,  int imageWidth, int imageHeight, int charSizeX, int charSizeY, int numOfImages, int overlap, float downSample)
+void evaluateResult(vector<Mat*> predictions, RandomCharactersImages& randIms,  int imageWidth, int imageHeight, int charSizeX, int charSizeY, int numOfImages, int overlap, 
+	int downSample, int minCluster, int pixelConnectionThres)
 {
 	printf("Visulize result....\n\n");
 	int charSizeXDownSampled = charSizeX/downSample;
@@ -840,10 +866,12 @@ void evaluateResult(vector<Mat*> predictions, RandomCharactersImages& randIms,  
 	string charStr;
 	double charSizeR = 0.25;//charSize/(100*overlap) + 1;
 	Mat characterRect, responseRect;
+	Mat visulizeClusters = Mat::zeros(imageHeight, imageWidth,CV_8UC3);
+	add(visulizeClusters, 255, visulizeClusters);
 	Mat visulizePred = Mat::zeros(imageHeight,imageWidth,CV_8UC3);
 	add(visulizePred,255,visulizePred);
 	//histogram parameters
-	MatND hist;
+	/*MatND hist;
 	int channels[2];
 	int	histSize[1];
 	float range[2];
@@ -853,7 +881,8 @@ void evaluateResult(vector<Mat*> predictions, RandomCharactersImages& randIms,  
 	const float* ranges[] = {range};
 	double minVal, maxVal;
 	int minIndx, maxIndx;
-	vector<Mat> mergeIm;
+	vector<Mat> mergeIm;*/
+	int maxIndx;
 
 	for(int i=0; i<numOfImages; i++)
 	{
@@ -866,12 +895,14 @@ void evaluateResult(vector<Mat*> predictions, RandomCharactersImages& randIms,  
 			{
 				//cout << x << endl;
 				responseRect = (*randIms.responses[i])(Rect(x*overlapTileX,y*overlapTileY,charSizeXDownSampled,charSizeYDownSampled));
-				calcHist(&responseRect,1,channels,cv::Mat(),hist,1,histSize,ranges,true,false);
-				cv::minMaxIdx(hist,&minVal,&maxVal,&minIndx,&maxIndx);
 
-				if(predictions[i]->at<uchar>(x,y))
+				maxIndx = calcMaxIndex(responseRect,256);
+				//calcHist(&responseRect,1,channels,cv::Mat(),hist,1,histSize,ranges,true,false);
+				//cv::minMaxIdx(hist,&minVal,&maxVal,&minIndx,&maxIndx);
+
+				if(predictions[i]->at<uchar>(y,x))
 				{
-					p = predictions[i]->at<uchar>(x,y);
+					p = predictions[i]->at<uchar>(y,x);
 					charStr = p;
 					characterRect = Mat::zeros(overlapTileY,overlapTileX,CV_8UC3);
 					//add(characterRect,255,characterRect);
@@ -902,10 +933,13 @@ void evaluateResult(vector<Mat*> predictions, RandomCharactersImages& randIms,  
 				}
 			}
 		}
+		calcClusters(*predictions[i],visulizeClusters, *randIms.responses[i],pixelConnectionThres,imageWidth,imageHeight,charSizeXDownSampled,charSizeXDownSampled/40,minCluster,overlapTileX,overlapTileY);
+
 		cout << "Number of true detections: " << numOfTrue << endl;
 		cout << "Number of false detections: " << numOfFalse << endl;
 		imshow("image", *randIms.randChars[i]);
 		imshow("visulize predictions",visulizePred);
+		imshow("visulize clusters",visulizeClusters);
 		waitKey();
 	}
 }
