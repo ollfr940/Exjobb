@@ -21,6 +21,12 @@ struct RandomCharacters
 	cv::Mat responses;
 };
 
+struct RandomImagesAndCharacters
+{
+	cv::Mat features;
+	cv::Mat responses;
+};
+
 struct RandomCharactersImages
 {
 	std::vector<cv::Mat*> randChars;

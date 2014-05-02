@@ -178,7 +178,7 @@ RandomCharacters produceDataFromImage(vector<Rect*> boxVec, vector<char> boxRes,
 	return chars;
 }
 
-RandomCharacters produceDataFromAfont(int numOfChars, string type, int numOfFalseData, int charDivX, int charDivY, double angle, bool falseClass, int downSample, bool useNoise)
+RandomCharacters produceDataFromAfont(int numOfChars, string type, int numOfFalseData, int tileSizeX, int tileSizeY, int charDivX, int charDivY, double angle, bool falseClass, bool useNoise)
 {
 	printf("Produce data from OCR A-font....\n\n");
 	uint64 initValue = time(0);
@@ -219,9 +219,9 @@ RandomCharacters produceDataFromAfont(int numOfChars, string type, int numOfFals
 		chars.responses = Mat::zeros(numOfDataForEachClass*numOfChars,1,CV_32SC1);
 
 	Mat* imRect, *imRectDownSampled,imCopy, imCopy1, imCopy2, imCopyTrans;
-	int x, y, x1, y1, x2, y2, typeOfFalseData;
-	int	width = 128;
-	int	height = 128;
+	int x, y, x1a, y1a, x2a, y2a, x1b, y1b, x2b, y2b, typeOfFalseData, randNoisePar1, randNoisePar2;
+	int	width = tileSizeX*2;
+	int	height = tileSizeY*2;
 	double randomAngle, scale = 1.0;
 	char d1, d2;
 	string dstr, dstr1, dstr2, *name, *name1, *name2;
@@ -235,14 +235,26 @@ RandomCharacters produceDataFromAfont(int numOfChars, string type, int numOfFals
 		for(int j=0; j<numOfChars; j++)
 		{
 			imRect = new Mat(Mat::zeros(height,width,CV_8UC1));
-			imRectDownSampled = new Mat(Mat::zeros(height/downSample,width/downSample,CV_8UC1));
+			imRectDownSampled = new Mat(Mat::zeros(tileSizeY,tileSizeX,CV_8UC1));
 			add(*imRectDownSampled,255,*imRectDownSampled);
 			if(useNoise)
-				randn(*imRectDownSampled,200,30);
+			{
+				randNoisePar1 = rng.uniform(30,150);
+				randNoisePar2 = rng.uniform(0,8);
+				randn(*imRectDownSampled,randNoisePar1,randNoisePar2);
+			}
 			add(*imRect,255,*imRect);
 
-			x = rng.uniform(-10-charDivX,-10+charDivX);
-			y = rng.uniform(10-charDivY, 10+charDivY);
+			if(width == height)
+			{
+				x = rng.uniform(-8-charDivX,-8+charDivX);
+				y = rng.uniform(8-charDivY, 8+charDivY);
+			}
+			else
+			{
+				x = rng.uniform(-charDivX,charDivX);
+				y = rng.uniform(8-charDivY,8+charDivY);
+			}
 
 			if(x >= 0 && y >= 0)
 				imCopy(Rect(x,y, width-x, height-y)).copyTo((*imRect)(Rect(0,0,width-x, height-y))); 
@@ -255,7 +267,7 @@ RandomCharacters produceDataFromAfont(int numOfChars, string type, int numOfFals
 
 			randomAngle = rng.uniform(-angle,angle);
 			rotate(*imRect,randomAngle,width, height, scale);
-			resize(*imRect,*imRect,Size(width/downSample,height/downSample));
+			resize(*imRect,*imRect,Size(tileSizeX,tileSizeY));
 			threshold(*imRect,*imRect,128,1,CV_8UC1);
 			multiply(*imRect,*imRectDownSampled,*imRectDownSampled);
 			chars.randChars.push_back(imRectDownSampled);
@@ -282,31 +294,63 @@ RandomCharacters produceDataFromAfont(int numOfChars, string type, int numOfFals
 			imCopy1 = imread(name1->c_str(),CV_LOAD_IMAGE_GRAYSCALE);
 			imCopy2 = imread(name2->c_str(),CV_LOAD_IMAGE_GRAYSCALE);
 			imRect = new Mat(Mat::zeros(height,width,CV_8UC1));
-			imRectDownSampled = new Mat(Mat::zeros(height/downSample,width/downSample,CV_8UC1));
+			imRectDownSampled = new Mat(Mat::zeros(tileSizeY,tileSizeX,CV_8UC1));
 			add(*imRectDownSampled,255,*imRectDownSampled);
 			if(useNoise)
-				randn(*imRectDownSampled,200,30);
+			{
+				randNoisePar1 = rng.uniform(30,150);
+				randNoisePar2 = rng.uniform(0,8);
+				randn(*imRectDownSampled,randNoisePar1,randNoisePar2);
+			}
 			add(*imRect,255,*imRect);
-			x1 = 80;
-			y1 = 10;
-			x2 = -80;
-			y2 = 10;
-			
-			typeOfFalseData = rng.uniform(0,3);
 
-			if(typeOfFalseData == 0)
-				imCopy1(Rect(x1,y1, width-x1, height-y1)).copyTo((*imRect)(Rect(0,0,width-x1, height-y1)));
-			else if(typeOfFalseData == 1)
-				imCopy2(Rect(0,y2, width+x2, height-y2)).copyTo((*imRect)(Rect(-x2,0,width+x2, height-y2))); 
+			if(width == height)
+			{
+				x1a = 80;
+				y1a = 10;
+				x2a = -80;
+				y2a = 10;
+			}
 			else
 			{
-				imCopy1(Rect(x1,y1, width-x1, height-y1)).copyTo((*imRect)(Rect(0,0,width-x1, height-y1)));
-				imCopy2(Rect(0,y2, width+x2, height-y2)).copyTo((*imRect)(Rect(-x2,0,width+x2, height-y2)));
+				x1a = 70;
+				y1a = 10;
+				x2a = -70;
+				y2a = 10;
+			}
+			x1b = rng.uniform(0,20);
+			x2b = rng.uniform(0,20);
+			y1b = rng.uniform(60,100);
+			y2b = rng.uniform(50,90);
+
+			typeOfFalseData = rng.uniform(0,5);
+
+			if(typeOfFalseData == 0)
+				imCopy1(Rect(x1a,y1a, width-x1a, height-y1a)).copyTo((*imRect)(Rect(0,0,width-x1a, height-y1a)));
+			else if(typeOfFalseData == 1)
+				imCopy2(Rect(0,y2a, width+x2a, height-y2a)).copyTo((*imRect)(Rect(-x2a,0,width+x2a, height-y2a))); 
+			else if(typeOfFalseData == 2)
+			{
+				imCopy1(Rect(x1a,y1a, width-x1a, height-y1a)).copyTo((*imRect)(Rect(0,0,width-x1a, height-y1a)));
+				imCopy2(Rect(0,y2a, width+x2a, height-y2a)).copyTo((*imRect)(Rect(-x2a,0,width+x2a, height-y2a)));
+			}
+			else if(typeOfFalseData == 3)
+			{
+				imCopy1(Rect(x1b,y1b, width-x1b, height-y1b)).copyTo((*imRect)(Rect(x1b,0,width-x1b, height-y1b)));
+			}
+			else if(typeOfFalseData == 4)
+			{
+				imCopy2(Rect(x2b,0, width-x2b, y2b)).copyTo((*imRect)(Rect(x2b,height-y2b,width-x2b, y2b))); 
+			}
+			else if(typeOfFalseData == 5)
+			{
+				imCopy1(Rect(x1b,y1b, width-x1b, height-y1b)).copyTo((*imRect)(Rect(x1b,0,width-x1b, height-y1b)));
+				imCopy2(Rect(x2b,0, width-x2b, y2b)).copyTo((*imRect)(Rect(x2b,height-y2b,width-x2b, y2b))); 
 			}
 
 			randomAngle = rng.uniform(-angle,angle);
 			rotate(*imRect,randomAngle,width, height, scale);
-			resize(*imRect,*imRect,Size(width/downSample,height/downSample));
+			resize(*imRect,*imRect,Size(tileSizeX,tileSizeY));
 			threshold(*imRect,*imRect,128,1,CV_8UC1);
 			multiply(*imRect,*imRectDownSampled,*imRectDownSampled);
 			chars.randChars.push_back(imRectDownSampled);
@@ -378,15 +422,14 @@ RandomCharactersImages createTestImages(int numOfImages, int numOfChars, int cha
 	return charImages;
 }*/
 
-RandomCharactersImages createTestImagesAfont(int numOfImages, int numOfChars, int charSize, int charDivX, int charDivY, int imageWidth, int imageHeight, string type,double angle, double fontSize, 
-	string charType, int downSample, bool useNoise)
+RandomCharactersImages createTestImagesAfont(int numOfImages, int numOfChars, int tileSizeX, int tileSizeY, int charDivX, int charDivY, int imageWidth, int imageHeight, string type,double angle, 
+	string charType, bool useNoise)
 {
 	printf("Create test images OCR A-font....\n\n");
 	RandomCharactersImages charImages;
 	Mat* image, *responses;
 	Mat characterRect, responseRect;
 	int xPos, yPos, randd;
-	int charSizeDownSampled = charSize/downSample;
 	uint64 initValue = time(0);
 	cv::RNG rng(initValue);
 	double scale = 1.0;
@@ -396,7 +439,7 @@ RandomCharactersImages createTestImagesAfont(int numOfImages, int numOfChars, in
 
 	for(int im=0; im<numOfImages; im++)
 	{
-		RandomCharacters characters = produceDataFromAfont(numOfChars,charType,0,charDivX,charDivY,angle,false, downSample,useNoise);
+		RandomCharacters characters = produceDataFromAfont(numOfChars,charType,0,tileSizeX, tileSizeY,charDivX,charDivY,angle,false,useNoise);
 		image = new Mat(Mat::zeros(imageWidth,imageHeight,CV_8UC1));
 		responses = new Mat(Mat::zeros(imageWidth,imageHeight,CV_8UC1));
 		add(*image,255,*image);
@@ -405,17 +448,17 @@ RandomCharactersImages createTestImagesAfont(int numOfImages, int numOfChars, in
 
 		for(int c=0; c<numOfChars; c++)
 		{
-			xPos = rng.uniform(0,imageWidth-charSizeDownSampled);
-			yPos = rng.uniform(0,imageHeight-charSizeDownSampled);
+			xPos = rng.uniform(0,imageWidth-tileSizeX);
+			yPos = rng.uniform(0,imageHeight-tileSizeY);
 
-			if(!sum((*responses)(Rect(xPos,yPos,charSizeDownSampled,charSizeDownSampled)))(0))
+			if(!sum((*responses)(Rect(xPos,yPos,tileSizeX,tileSizeY)))(0))
 			{
 				randd = rng.uniform(0,(int)characters.randChars.size()-1);
 				characterRect = *characters.randChars[randd];
-				responseRect = Mat::zeros(charSizeDownSampled,charSizeDownSampled,CV_8UC1);
+				responseRect = Mat::zeros(tileSizeY,tileSizeX,CV_8UC1);
 				add(responseRect,(int)characters.responses.at<int>(randd,0),responseRect);
-				characterRect.copyTo((*image)(Rect(xPos,yPos,charSizeDownSampled,charSizeDownSampled)));
-				responseRect.copyTo((*responses)(Rect(xPos,yPos,charSizeDownSampled,charSizeDownSampled)));
+				characterRect.copyTo((*image)(Rect(xPos,yPos,tileSizeX,tileSizeY)));
+				responseRect.copyTo((*responses)(Rect(xPos,yPos,tileSizeX,tileSizeY)));
 			}
 		}
 		charImages.randChars.push_back(image);
@@ -441,14 +484,10 @@ Mat createResponses(int trainingNum, int characters)
 
 
 
-void evaluateIm(vector<CvRTrees*> forestVector, int testNum, int imageSize,string type, string featureType,int charDivX, int charDivY, int charOrg,int fontSize,
-	string charType, int numOfPoints, double angle, int numOfTrees, double threshold, bool falseClass, bool useAfont, int downSample, bool useNoise)
+void evaluateIm(vector<CvRTrees*> forestVector, int testNum, int tileSizeX, int tileSizeY,string type, string featureType,int charDivX, int charDivY,int fontSize,
+	string charType, int numOfPoints, double angle, int numOfTrees, double threshold, bool falseClass, bool useNoise)
 {
-	RandomCharacters testData;
-	if(useAfont)
-		testData = produceDataFromAfont(testNum, charType,0,charDivX,charDivY,angle,falseClass, downSample,useNoise);
-	//else
-		//testData = produceData(testNum,imageSize,type,angle,charDivX,charDivY,charOrg,fontSize, falseClass,useNoise);
+	RandomCharacters testData = produceDataFromAfont(testNum, charType,0,tileSizeX, tileSizeY,charDivX,charDivY,angle,falseClass,useNoise);
 
 	int numOfDataForEachClass;
 	if(type == "digits")
@@ -465,7 +504,7 @@ void evaluateIm(vector<CvRTrees*> forestVector, int testNum, int imageSize,strin
 		abort();
 	}
 
-	Mat testFeatures = calcFeaturesTraining(testData,numOfPoints,featureType,downSample,useNoise);
+	Mat testFeatures = calcFeaturesTraining(testData,numOfPoints,featureType,tileSizeX, tileSizeY,useNoise);
 	int truePred = 0;
 	double trueConf = 0;
 	int numOfForests = (int)forestVector.size();
@@ -503,29 +542,39 @@ void evaluateIm(vector<CvRTrees*> forestVector, int testNum, int imageSize,strin
 	cout << "True detections :" << truePred << endl;
 	cout << "Average amount of correct classifications: " << trueConf/(testNum*numOfDataForEachClass) << endl;
 }
-/*
-vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> forestVector,int imNum, int imageWidth, int imageHeight, int charSizeX, int charSizeY, int overlap, int numOfTrees,double desicionThres, int numOfPointPairs, string charType, string featureType, float downSample)
+
+
+vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> forestVector1, vector<CvRTrees*> forestVector2, int imNum, int imageWidth, int imageHeight, int charSizeX, int charSizeY, int overlap, 
+	int numOfTrees,double desicionThres1, double desicionThres2, int numOfPointPairs1, int numOfPointPairs2, string charType, string featureType, int downSample,bool useNoise)
 {
 	printf("Detecting characters in images....\n\n");
 	//CalcRectSample calcRect;
 	DWORD start, stop;
 	int xPos, yPos, predPosx, predPosy;
-	Mat imRect, integralRect, featureMat;
-	int imRectUp,imRectDown, imRectMiddleHor, imRectMiddleVert, imRectRight, imRectLeft, imRectSum, rectFiltNum;
+	int charSizeXUpSampled = charSizeX*downSample;
+	int charSizeYUpSampled = charSizeY*downSample;
+	int overlapTileX = charSizeX/overlap;
+	int overlapTileY = charSizeY/overlap;
+
+	Mat imRect,imRect8x8, integralRect; 
+	Mat featureMat1;
+	Mat featureMat2 = Mat::zeros(1,numOfPointPairs2,CV_32FC1);
+	Scalar mean, std;
+	int imRectUp,imRectDown, imRectMiddleHor, imRectMiddleVert, rectFiltNum, imRectSum, imRectLeft, imRectRight, imRectUpUp, imRectDownDown;
+	//int imRectUp,imRectDown, imRectMiddleHor, imRectMiddleVert, rectFiltNum;
 	vector<Mat*> predictions;
 	Mat* pred;
-	char proxIndx;
 	int tileNumX = imageWidth/charSizeX*overlap - (overlap-1);
 	int tileNumY = imageHeight/charSizeY*overlap - (overlap-1);
 
 	if(featureType == "rects")
 	{
 		rectFiltNum = calcRectFiltNum(charSizeX,charSizeY)+1;
-		featureMat = Mat::zeros(1,rectFiltNum,CV_32FC1);
+		featureMat1 = Mat::zeros(1,rectFiltNum,CV_32FC1);
 	}
 	else if(featureType == "points")
 	{
-		featureMat = Mat::zeros(1,numOfPointPairs,CV_32FC1);
+		featureMat1 = Mat::zeros(1,numOfPointPairs1,CV_32FC1);
 	}
 
 	Mat treePred;
@@ -533,18 +582,17 @@ vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> fo
 	double minVal, maxVal;
 	int minIndx[2] = {0,0};
 	int maxIndx[2] = {0,0};
-	CvMat sample1, sample2;
-	float proxOld, proxNew;
-	char prox;
-	int numOfForests = (int)forestVector.size();
-	Mat pointPairVector = Mat::zeros(numOfPointPairs,4,CV_32SC1);
+	int numOfForests = (int)forestVector1.size();
+
+	Mat pointPairVector1 = Mat::zeros(numOfPointPairs1,4,CV_32SC1);
+	Mat pointPairVector2 = Mat::zeros(numOfPointPairs2,4,CV_32SC1);
 
 	if(featureType == "points")
 	{
 		cv::RNG rng(0);
 		int distThreshold = 20;
 		int x1, x2, y1, y2;
-		for(int i=0; i<numOfPointPairs; i++)
+		for(int i=0; i<numOfPointPairs1; i++)
 		{
 			x1 = 0;
 			y1 = 0;
@@ -553,155 +601,42 @@ vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> fo
 			
 			while(abs(x1-x2) < distThreshold && abs(y1-y2) < distThreshold)
 			{
-				x1 = rng.uniform(charSizeX/4,charSizeX*3/4);
-				y1 = rng.uniform(charSizeY/4,charSizeY*3/4);
-				x2 = rng.uniform(0,charSizeX);
-				y2 = rng.uniform(0,charSizeY);
+				x1 = rng.uniform(charSizeXUpSampled/4,charSizeXUpSampled*3/4);
+				y1 = rng.uniform(charSizeYUpSampled/4,charSizeYUpSampled*3/4);
+				x2 = rng.uniform(0,charSizeXUpSampled);
+				y2 = rng.uniform(0,charSizeYUpSampled);
 			}
-			pointPairVector.at<int>(i,0) = x1/downSample;
-			pointPairVector.at<int>(i,1) = y1/downSample;
-			pointPairVector.at<int>(i,2) = x2/downSample;
-			pointPairVector.at<int>(i,3) = y2/downSample;
+			pointPairVector1.at<int>(i,0) = x1/downSample;
+			pointPairVector1.at<int>(i,1) = y1/downSample;
+			pointPairVector1.at<int>(i,2) = x2/downSample;
+			pointPairVector1.at<int>(i,3) = y2/downSample;
 		}
 	}
 
-	start = GetTickCount();
-	for(int im=0; im<imNum; im++)
+	RNG rng(0);
+	int distThreshold = 20;
+	int x1, x2, y1, y2;
+	for(int i=0; i<numOfPointPairs2; i++)
 	{
-		pred = new Mat(Mat::zeros(tileNumX,tileNumY, CV_8UC1));
-		xPos = 0;
-		yPos = 0;
-		predPosx = 0;
-		predPosy = 0;
-		while(yPos < imageHeight-charSizeY && predPosy < tileNumY)
+		x1 = 0;
+		y1 = 0;
+		x2 = 0;
+		y2 = 0;
+
+		while(abs(x1-x2) < distThreshold && abs(y1-y2) < distThreshold)
 		{
-			while(xPos < imageWidth-charSizeX && predPosx < tileNumX)
-			{
-				int rectArea = charSizeX*charSizeY*255;
-				imRect = (*randIms.randChars[im])(Rect(xPos,yPos,charSizeX,charSizeY));
-				//imRectSum = sum(imRect)(0);
-				imRectUp = sum(imRect(Rect(0,0,charSizeX,charSizeY/4)))(0);
-				imRectDown = sum(imRect(Rect(0,charSizeY*3/4,charSizeX,charSizeY/4)))(0);
-				imRectMiddleHor = sum(imRect(Rect(0,charSizeY*7/16,charSizeX,charSizeY/8)))(0);
-				imRectMiddleVert = sum(imRect(Rect(charSizeX*7/16,0,charSizeX/8, charSizeY)))(0);
-				//imRectLeft = sum(imRect(Rect(0,0,charSizeX*4/16, charSizeY)))(0);
-				//imRectRight = sum(imRect(Rect(charSizeX*12/16,0,charSizeX*4/16, charSizeY)))(0);
-				if(imRectUp < rectArea/4 && imRectDown < rectArea/4 && imRectMiddleVert < rectArea/8 && imRectMiddleHor < rectArea/8)
-				{
-					//imshow("sfsdf",imRect);
-					//waitKey();
-					if(featureType == "rects")
-						calcRectFeatureTile(imRect,featureMat,charSizeX,charSizeY,0);
-					else if(featureType == "points")
-					{
-						featureMat = Mat::zeros(1,numOfPointPairs,CV_32FC1);
-						calcPointPairsFeaturesTile(imRect,featureMat,pointPairVector,numOfPointPairs,0);
-					}
-					else
-						abort();
-
-					//Loop over all trees
-
-					treePred = Mat::zeros(256,1, CV_32SC1);
-
-					for(int f=0; f<numOfForests; f++)
-					{
-						for(int t=0; t<(int)numOfTrees; t++)
-						{
-							tree = forestVector[f]->get_tree(t);
-							treePred.at<int>(tree->predict(featureMat)->value,0)++;
-						}
-					}
-					cv::minMaxIdx(treePred,&minVal,&maxVal,minIndx,maxIndx);
-					//cout << (char)(*maxIndx) << "\t" << maxVal/(numOfForests*numOfTrees) << endl;
-					if(maxVal > numOfTrees*numOfForests*desicionThres)
-						pred->at<uchar>(predPosx,predPosy) = *maxIndx;
-						
-					xPos += charSizeX/overlap;
-					predPosx++;
-					//yPos += charSize/overlap;
-				}
-				else
-				{
-					xPos += charSizeX/overlap; // charSize;
-					predPosx++; // += overlap;
-					//yPos += charSize;
-				}
-			}
-			predPosx = 0;
-			predPosy++;
-			xPos = 0;
-			yPos += charSizeY/overlap;
+			x1 = rng.uniform(charSizeX/4,charSizeX*3/4);
+			y1 = rng.uniform(charSizeY/4,charSizeY*3/4);
+			x2 = rng.uniform(0,charSizeX);
+			y2 = rng.uniform(0,charSizeY);
 		}
-		predictions.push_back(pred);
-	}
-	stop = GetTickCount();
-	std::cout << "Average time per image: " << (float)(stop - start)/((float)imNum)/1000 << std::endl << std::endl; 
-	return predictions;
-}*/
 
-vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> forestVector,int imNum, int imageWidth, int imageHeight, int charSizeX, int charSizeY, int overlap, 
-	int numOfTrees,double desicionThres, int numOfPointPairs, string charType, string featureType, int downSample,bool useNoise)
-{
-	printf("Detecting characters in images....\n\n");
-	//CalcRectSample calcRect;
-	DWORD start, stop;
-	int xPos, yPos, predPosx, predPosy;
-	int charSizeXDownSampled = charSizeX/downSample;
-	int charSizeYDownSampled = charSizeY/downSample;
-	int overlapTileX = charSizeXDownSampled/overlap;
-	int overlapTileY = charSizeYDownSampled/overlap;
-
-	Mat imRect, integralRect, featureMat;
-	int imRectUp,imRectDown, imRectMiddleHor, imRectMiddleVert, rectFiltNum;
-	vector<Mat*> predictions;
-	Mat* pred;
-	int tileNumX = imageWidth/charSizeXDownSampled*overlap - (overlap-1);
-	int tileNumY = imageHeight/charSizeYDownSampled*overlap - (overlap-1);
-
-	if(featureType == "rects")
-	{
-		rectFiltNum = calcRectFiltNum(charSizeX,charSizeY)+1;
-		featureMat = Mat::zeros(1,rectFiltNum,CV_32FC1);
-	}
-	else if(featureType == "points")
-	{
-		featureMat = Mat::zeros(1,numOfPointPairs,CV_32FC1);
+		pointPairVector2.at<int>(i,0) = x1/(charSizeX/8);
+		pointPairVector2.at<int>(i,1) = y1/(charSizeY/8);
+		pointPairVector2.at<int>(i,2) = x2/(charSizeX/8);
+		pointPairVector2.at<int>(i,3) = y2/(charSizeY/8);
 	}
 
-	Mat treePred;
-	CvForestTree* tree;
-	double minVal, maxVal;
-	int minIndx[2] = {0,0};
-	int maxIndx[2] = {0,0};
-	int numOfForests = (int)forestVector.size();
-	Mat pointPairVector = Mat::zeros(numOfPointPairs,4,CV_32SC1);
-
-	if(featureType == "points")
-	{
-		cv::RNG rng(0);
-		int distThreshold = 20;
-		int x1, x2, y1, y2;
-		for(int i=0; i<numOfPointPairs; i++)
-		{
-			x1 = 0;
-			y1 = 0;
-			x2 = 0;
-			y2 = 0;
-			
-			while(abs(x1-x2) < distThreshold && abs(y1-y2) < distThreshold)
-			{
-				x1 = rng.uniform(charSizeX/4,charSizeX*3/4);
-				y1 = rng.uniform(charSizeY/4,charSizeY*3/4);
-				x2 = rng.uniform(0,charSizeX);
-				y2 = rng.uniform(0,charSizeY);
-			}
-			pointPairVector.at<int>(i,0) = x1/downSample;
-			pointPairVector.at<int>(i,1) = y1/downSample;
-			pointPairVector.at<int>(i,2) = x2/downSample;
-			pointPairVector.at<int>(i,3) = y2/downSample;
-		}
-	}
 
 	start = GetTickCount();
 	for(int im=0; im<imNum; im++)
@@ -715,23 +650,59 @@ vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> fo
 			for(int x=0; x<tileNumX; x++)
 			{
 				xPos = x*overlapTileY;
-				int rectArea = charSizeXDownSampled*charSizeYDownSampled*255;
-				imRect = (*randIms.randChars[im])(Rect(xPos,yPos,charSizeXDownSampled,charSizeYDownSampled));
-				imRectUp = static_cast<int>(sum(imRect(Rect(0,0,charSizeXDownSampled,charSizeYDownSampled/4)))(0));
+				//int rectArea = charSizeXDownSampled*charSizeYDownSampled*255;
+				imRect = (*randIms.randChars[im])(Rect(xPos,yPos,charSizeX,charSizeY));
+				/*imRectUp = static_cast<int>(sum(imRect(Rect(0,0,charSizeXDownSampled,charSizeYDownSampled/4)))(0));
 				imRectDown = static_cast<int>(sum(imRect(Rect(0,charSizeYDownSampled*3/4,charSizeXDownSampled,charSizeYDownSampled/4)))(0));
 				imRectMiddleHor = static_cast<int>(sum(imRect(Rect(0,charSizeYDownSampled*7/16,charSizeXDownSampled,charSizeYDownSampled/8)))(0));
 				imRectMiddleVert = static_cast<int>(sum(imRect(Rect(charSizeXDownSampled*7/16,0,charSizeXDownSampled/8, charSizeYDownSampled)))(0));
+				*/
+				resize(imRect,imRect8x8,Size(8,8));
+				featureMat2 = Mat::zeros(1,numOfPointPairs2,CV_32FC1);
+				calcPointPairsFeaturesTile(imRect8x8,featureMat2,pointPairVector2,numOfPointPairs2,0, false);
 
-				if(imRectUp < rectArea/4 && imRectDown < rectArea/4 && imRectMiddleVert < rectArea/8 && imRectMiddleHor < rectArea/8)
+				treePred = Mat::zeros(2,1, CV_32SC1);
+
+				for(int f=0; f<forestVector2.size(); f++)
+				{
+					for(int t=0; t<(int)numOfTrees; t++)
+					{
+						tree = forestVector2[f]->get_tree(t);
+						treePred.at<int>(static_cast<int>(tree->predict(featureMat2)->value),0)++;
+					}
+				}
+				
+				cv::meanStdDev(imRect,mean,std);
+				imRectSum = std.val[0];
+				cv::meanStdDev(imRect(Rect(0,0,charSizeX,charSizeY/4)),mean,std);
+				imRectUp = std.val[0];
+				cv::meanStdDev(imRect(Rect(0,charSizeY*3/4,charSizeX,charSizeY/4)),mean,std);
+				imRectDown = std.val[0];
+				cv::meanStdDev(imRect(Rect(0,charSizeY*7/16,charSizeX,charSizeY/8)),mean,std);
+				imRectMiddleHor = std.val[0];
+				cv::meanStdDev(imRect(Rect(charSizeX*7/16,0,charSizeX/8, charSizeY)),mean,std);
+				imRectMiddleVert = std.val[0];
+				cv::meanStdDev(imRect(Rect(0,0,charSizeX/64,charSizeY)),mean,std);
+				imRectLeft = std.val[0];
+				cv::meanStdDev(imRect(Rect(charSizeY*59/64,0,charSizeX/64,charSizeY)),mean,std);
+				imRectRight = std.val[0];
+				cv::meanStdDev(imRect(Rect(0,0,charSizeX,charSizeY/64)),mean,std);
+				imRectUpUp = std.val[0];
+				cv::meanStdDev(imRect(Rect(0,charSizeY*59/64,charSizeX,charSizeY/64)),mean,std);
+				imRectDownDown = std.val[0];
+				//if(imRectUp < rectArea/4 && imRectDown < rectArea/4 && imRectMiddleVert < rectArea/8 && imRectMiddleHor < rectArea/8)
+				int stdThres = 40;
+				//if(imRectSum > stdThres && imRectUp > stdThres && imRectDown > stdThres && imRectMiddleVert > stdThres && imRectMiddleHor > stdThres)
+				if(treePred.at<int>(1,0) > desicionThres2*numOfTrees)
 				{
 					//imshow("sfsdf",imRect);
 					//waitKey();
 					if(featureType == "rects")
-						calcRectFeatureTile(imRect,featureMat,charSizeX,charSizeY,0);
+						calcRectFeatureTile(imRect,featureMat1,charSizeX,charSizeY,0);
 					else if(featureType == "points")
 					{
-						featureMat = Mat::zeros(1,numOfPointPairs,CV_32FC1);
-						calcPointPairsFeaturesTile(imRect,featureMat,pointPairVector,numOfPointPairs,0,useNoise);
+						featureMat1 = Mat::zeros(1,numOfPointPairs1,CV_32FC1);
+						calcPointPairsFeaturesTile(imRect,featureMat1,pointPairVector1,numOfPointPairs1,0,useNoise);
 					}
 					else
 						abort();
@@ -744,19 +715,20 @@ vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> fo
 					{
 						for(int t=0; t<(int)numOfTrees; t++)
 						{
-							tree = forestVector[f]->get_tree(t);
-							treePred.at<int>(static_cast<int>(tree->predict(featureMat)->value),0)++;
+							tree = forestVector1[f]->get_tree(t);
+							treePred.at<int>(static_cast<int>(tree->predict(featureMat1)->value),0)++;
 						}
 					}
 					cv::minMaxIdx(treePred,&minVal,&maxVal,minIndx,maxIndx);
 					//cout << (char)(*maxIndx) << "\t" << maxVal/(numOfForests*numOfTrees) << endl;
-					if(maxVal > numOfTrees*numOfForests*desicionThres)
+					if(maxVal > numOfTrees*numOfForests*desicionThres1)
 						pred->at<uchar>(predPosy,predPosx) = *maxIndx;
 						
 				}
 				predPosx++;
 
 			}
+			//cout << y << endl;
 			predPosx = 0;
 			predPosy++;
 		}
@@ -768,99 +740,14 @@ vector<Mat*> predictImages(RandomCharactersImages& randIms, vector<CvRTrees*> fo
 }
 
 
-
-/*void evaluateResult(vector<Mat*> predictions, RandomCharactersImages& randIms,  int imageWidth, int imageHeight, int charSizeX, int charSizeY, int numOfImages, int overlap, float downSample)
+void evaluateResult(vector<Mat*> predictions, RandomCharactersImages& randIms,  int imageWidth, int imageHeight, int charSizeX, int charSizeY, int numOfImages, int overlap, 
+	 int minCluster, int pixelConnectionThres)
 {
 	printf("Visulize result....\n\n");
 	int overlapTileX = charSizeX/overlap;
 	int overlapTileY = charSizeY/overlap;
 	int tileNumX = imageWidth/charSizeX*overlap - (overlap-1);
 	int tileNumY = imageHeight/charSizeY*overlap - (overlap-1);
-	char p;
-	int numOfTrue, numOfFalse;
-	char maxRes;
-	string charStr;
-	double charSizeR = 0.25;//charSize/(100*overlap) + 1;
-	Mat characterRect, responseRect;
-	Mat visulizePred = Mat::zeros(imageHeight,imageWidth,CV_8UC3);
-	add(visulizePred,255,visulizePred);
-	//histogram parameters
-	MatND hist;
-	int channels[2];
-	int	histSize[1];
-	float range[2];
-	channels[0] = 0; channels[1] = 1; 
-	histSize[0] = 256;
-	range[0] = 0; range[1] = 256; //charSize*charSize/(overlap*overlap);
-	const float* ranges[] = {range};
-	double minVal, maxVal;
-	int minIndx, maxIndx;
-	vector<Mat> mergeIm;
-
-	for(int i=0; i<numOfImages; i++)
-	{
-		numOfTrue = 0;
-		numOfFalse = 0;
-
-		for(int x=0; x<tileNumX; x++)
-		{
-			for(int y=0; y<tileNumY; y++)
-			{
-				cout << x << endl;
-				responseRect = (*randIms.responses[i])(Rect(x*overlapTileX,y*overlapTileY,charSizeX,charSizeY));
-				calcHist(&responseRect,1,channels,cv::Mat(),hist,1,histSize,ranges,true,false);
-				cv::minMaxIdx(hist,&minVal,&maxVal,&minIndx,&maxIndx);
-
-				if(predictions[i]->at<uchar>(x,y))
-				{
-					p = predictions[i]->at<uchar>(x,y);
-					charStr = p;
-					characterRect = Mat::zeros(overlapTileY,overlapTileX,CV_8UC3);
-					//add(characterRect,255,characterRect);
-					cv::Point org(overlapTileX/12,overlapTileY-overlapTileY/12);
-
-					if(p == (char)maxIndx)
-					{
-						cv::putText(characterRect,charStr , org, 0, charSizeR,CV_RGB(0,255,0), 1, 8,false);
-						numOfTrue++;
-					}
-					else
-					{
-						add(characterRect,255,characterRect);
-						cv::putText(characterRect,charStr , org, 0, charSizeR ,CV_RGB(255,0,0), 1, 8,false);
-						numOfFalse++;
-					}
-
-					characterRect.copyTo(visulizePred(Rect(x*overlapTileX,y*overlapTileY,overlapTileX,overlapTileY)));
-				}
-				else if(maxIndx != 0)
-				{
-					characterRect = Mat::zeros(overlapTileY,overlapTileX,CV_8UC3);
-					characterRect.copyTo(visulizePred(Rect(x*overlapTileX,y*overlapTileY,overlapTileX,overlapTileY)));
-				}
-			}
-		}
-		cout << "Number of true detections: " << numOfTrue << endl;
-		cout << "Number of false detections: " << numOfFalse << endl;
-		//Mat upSampledVis, upSampledIm;
-		//resize(visulizePred,upSampledVis,Size(imageHeight*upSample,imageWidth*upSample));
-		//resize(*randIms.randChars[i],upSampledIm,Size(imageHeight*upSample,imageWidth*upSample));
-		imshow("image", *randIms.randChars[i]);
-		imshow("visulize predictions",visulizePred);
-		waitKey();
-	}
-}*/
-
-void evaluateResult(vector<Mat*> predictions, RandomCharactersImages& randIms,  int imageWidth, int imageHeight, int charSizeX, int charSizeY, int numOfImages, int overlap, 
-	int downSample, int minCluster, int pixelConnectionThres)
-{
-	printf("Visulize result....\n\n");
-	int charSizeXDownSampled = charSizeX/downSample;
-	int charSizeYDownSampled = charSizeY/downSample;
-	int overlapTileX = charSizeXDownSampled/overlap;
-	int overlapTileY = charSizeYDownSampled/overlap;
-	int tileNumX = imageWidth/charSizeXDownSampled*overlap - (overlap-1);
-	int tileNumY = imageHeight/charSizeYDownSampled*overlap - (overlap-1);
 	char p;
 	int numOfTrue, numOfFalse;
 	string charStr;
@@ -894,7 +781,7 @@ void evaluateResult(vector<Mat*> predictions, RandomCharactersImages& randIms,  
 			for(int y=0; y<tileNumY; y++)
 			{
 				//cout << x << endl;
-				responseRect = (*randIms.responses[i])(Rect(x*overlapTileX,y*overlapTileY,charSizeXDownSampled,charSizeYDownSampled));
+				responseRect = (*randIms.responses[i])(Rect(x*overlapTileX,y*overlapTileY,charSizeX,charSizeY));
 
 				maxIndx = calcMaxIndex(responseRect,256);
 				//calcHist(&responseRect,1,channels,cv::Mat(),hist,1,histSize,ranges,true,false);
@@ -933,7 +820,7 @@ void evaluateResult(vector<Mat*> predictions, RandomCharactersImages& randIms,  
 				}
 			}
 		}
-		calcClusters(*predictions[i],visulizeClusters, *randIms.responses[i],pixelConnectionThres,imageWidth,imageHeight,charSizeXDownSampled,charSizeXDownSampled/40,minCluster,overlapTileX,overlapTileY);
+		calcClusters(*predictions[i],visulizeClusters, *randIms.responses[i],pixelConnectionThres,imageWidth,imageHeight,charSizeX,charSizeX/40,minCluster,overlapTileX,overlapTileY);
 
 		cout << "Number of true detections: " << numOfTrue << endl;
 		cout << "Number of false detections: " << numOfFalse << endl;
@@ -942,4 +829,167 @@ void evaluateResult(vector<Mat*> predictions, RandomCharactersImages& randIms,  
 		imshow("visulize clusters",visulizeClusters);
 		waitKey();
 	}
+}
+
+void evaluateBackground(Mat& image, vector<CvRTrees*> forestVector1, int tileSizeX, int tileSizeY, int numOfPointPairs1, double desicionThres2, int overlap )
+{
+	printf("Visulize result....\n\n");
+	Mat imRect, imRect8x8, imageThresholded;
+	Mat imageCopy = image.clone();
+	int imageHeight = image.rows;
+	int imageWidth = image.cols;
+	int xPos = 0;
+	int	yPos = 0;
+	int	predPosx = 0;
+	int	predPosy = 0;
+	Mat pointPairVector1 = Mat::zeros(numOfPointPairs1,4,CV_32SC1);
+	Mat featureMat1 = Mat::zeros(1,numOfPointPairs1,CV_32FC1);
+	Mat treePred;
+	CvForestTree* tree;
+	int tileNumX = imageWidth/(tileSizeX/overlap) - 2;
+	int tileNumY = imageHeight/(tileSizeY/overlap) - 2;
+	int overlapTileX = tileSizeX/overlap;
+	int overlapTileY = tileSizeY/overlap;
+	cv::adaptiveThreshold(image,imageThresholded,255,ADAPTIVE_THRESH_GAUSSIAN_C,THRESH_BINARY,tileSizeX+1,20);
+	
+	imshow("ljglj",imageThresholded);
+	waitKey();
+	RNG rng(0);
+	int distThreshold = 10;
+	int x1, x2, y1, y2;
+	for(int i=0; i<numOfPointPairs1; i++)
+	{
+		x1 = 0;
+		y1 = 0;
+		x2 = 0;
+		y2 = 0;
+
+		while(abs(x1-x2) < distThreshold && abs(y1-y2) < distThreshold)
+		{
+			x1 = rng.uniform(tileSizeX/4,tileSizeX*3/4);
+			y1 = rng.uniform(tileSizeY/4,tileSizeY*3/4);
+			x2 = rng.uniform(0,tileSizeX);
+			y2 = rng.uniform(0,tileSizeY);
+		}
+
+		pointPairVector1.at<int>(i,0) = x1/(tileSizeX/8);
+		pointPairVector1.at<int>(i,1) = y1/(tileSizeY/8);
+		pointPairVector1.at<int>(i,2) = x2/(tileSizeX/8);
+		pointPairVector1.at<int>(i,3) = y2/(tileSizeY/8);
+	}
+
+
+		while(yPos < imageHeight - tileSizeY)
+		{
+			while(xPos < imageWidth - tileSizeX)
+			{
+				/*imRect = image(Rect(xPos,yPos,tileSizeX,tileSizeY));
+				resize(imRect,imRect8x8,Size(8,8));
+				featureMat1 = Mat::zeros(1,numOfPointPairs1,CV_32FC1);
+				calcPointPairsFeaturesTile(imRect8x8,featureMat1,pointPairVector1,numOfPointPairs1,0, false);
+				*/
+				int reSizeTo = 8;
+				imRect = imageThresholded(Rect(xPos,yPos,tileSizeX,tileSizeY));
+				featureMat1 = Mat::zeros(1,reSizeTo*reSizeTo,CV_32FC1);
+				calcStdTile(imRect,featureMat1,0,reSizeTo);
+				treePred = Mat::zeros(2,1, CV_32SC1);
+
+				for(int f=0; f<forestVector1.size(); f++)
+				{
+					for(int t=0; t< forestVector1[0]->get_tree_count(); t++)
+					{
+						tree = forestVector1[f]->get_tree(t);
+						treePred.at<int>(static_cast<int>(tree->predict(featureMat1)->value),0)++;
+					}
+				}
+				if(treePred.at<int>(1,0) > desicionThres2*forestVector1[0]->get_tree_count())
+				{
+					//imshow("Evaluate background",imRect);
+					//waitKey();
+					rectangle(imageCopy,Point(xPos,yPos),Point(xPos+tileSizeX,yPos+tileSizeY),Scalar(0,0,0));
+				}
+				predPosx++;
+				xPos += overlapTileX;
+			}
+			xPos = 0;
+			yPos += overlapTileY;
+			predPosx = 0;
+			predPosy++;
+		}
+		imshow("Evaluate background",imageCopy);
+		waitKey();
+}
+
+
+void calcTreeForPlot(CvRTrees* forest, int numOfPoints,int tileSizeX, int tileSizeY, int charDivX, int charDivY, bool useNoise, int maxDepth)
+{
+
+	RandomCharacters testData = produceDataFromAfont(1,"digitsAndLetters",0, tileSizeX, tileSizeY, charDivX,charDivY,0,false,useNoise);
+	Mat pointPairVector = Mat::zeros(numOfPoints,4,CV_32SC1);
+	Mat* character;
+	vector<vector<int>*> pred;
+	cv::RNG rng(0);
+	int distThreshold = 10;
+	int x1, x2, y1, y2;
+	for(int i=0; i<numOfPoints; i++)
+	{
+		x1 = 0;
+		y1 = 0;
+		x2 = 0;
+		y2 = 0;
+
+		while(abs(x1-x2) < distThreshold && abs(y1-y2) < distThreshold)
+		{
+			x1 = rng.uniform(tileSizeX/4,tileSizeX*3/4);
+			y1 = rng.uniform(tileSizeY/4,tileSizeY*3/4);
+			x2 = rng.uniform(0,tileSizeX);
+			y2 = rng.uniform(0,tileSizeY);
+		}
+
+		pointPairVector.at<int>(i,0) = x1;
+		pointPairVector.at<int>(i,1) = y1;
+		pointPairVector.at<int>(i,2) = x2;
+		pointPairVector.at<int>(i,3) = y2;
+	}
+
+	CvForestTree* tree = forest->get_tree(0);
+	CvDTreeSplit* split; 
+
+	for(int im = 0; im < testData.randChars.size(); im++)
+	{
+		pred.push_back(new vector<int>);
+		character = testData.randChars[im];
+		const CvDTreeNode* treeNode = tree->get_root();
+
+
+		for(int j=0; j<maxDepth+1; j++)
+		{
+
+			if(treeNode->left)
+			{
+				split = treeNode->split;
+				x1 = pointPairVector.at<int>(split->var_idx,0);
+				y1 = pointPairVector.at<int>(split->var_idx,1);
+				x2 = pointPairVector.at<int>(split->var_idx,2);
+				y2 = pointPairVector.at<int>(split->var_idx,3);
+
+				if(character->at<uchar>(y1,x1) >= character->at<uchar>(y2,x2))
+				{
+					//cout << 1;
+					pred[im]->push_back(1);
+					treeNode = treeNode->right;
+				}
+				else if(character->at<uchar>(y1,x1) < character->at<uchar>(y2,x2))
+				{
+					//cout << -1;
+					pred[im]->push_back(-1);
+					treeNode = treeNode->left;
+				}
+			}
+			else
+				pred[im]->push_back(0);
+		}
+
+	}
+	writeMatToFile(pred,"testTree.txt");
 }

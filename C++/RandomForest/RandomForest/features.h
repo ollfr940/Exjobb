@@ -16,8 +16,16 @@
 #define FEATURES_H
 
 void calcRectFeatureTile(cv::Mat& tile, cv::Mat& featureMat, int width, int height, int im);
-cv::Mat calcFeaturesTraining(RandomCharacters trainingData, int numOfPoints, std::string featureType, int downSample, bool useNoise);
+cv::Mat calcFeaturesTraining(RandomCharacters trainingData, int numOfPoints, std::string featureType, int tileSizeX, int tileSizeY, bool useNoise);
 void calcPointPairsFeaturesTile(cv::Mat& tile, cv::Mat& featureMat, cv::Mat& pointVector, int numOfPoints, int im, bool useNoise);
-cv::Mat calcPointPairsFeaturesTraining(RandomCharacters trainingData, int numOfPoints);
+//cv::Mat calcPointPairsFeaturesTraining(RandomCharacters trainingData, int numOfPoints, bool useDiff);
+
+RandomImagesAndCharacters calcPointPairFeaturesScales(std::vector<cv::Mat*> randomImages, RandomCharacters trainingData, int tileSizeX, int tileSizeY, int resizeTo,
+	int imageSize,int numOfPointPairs, int numOfTrueCharacters, int numOfFalseCharacters, std::string typeOfChars, bool useNoise);
+
+RandomImagesAndCharacters calcStandardDeviationFeatures(std::vector<cv::Mat*> randomImages, RandomCharacters trainingData, int tileSizeX, int tileSizeY, int imageSize, 
+	int numOfTrueCharacters, int numOfFalseCharacters, std::string typeOfChars, int reSizeTo);
+
+void calcStdTile(cv::Mat& tile, cv::Mat& featureMat, int im, int reSizeTo);
 
 #endif

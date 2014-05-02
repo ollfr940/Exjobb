@@ -102,9 +102,9 @@ void calcPointPairsFeaturesTile(Mat& tile, Mat& featureMat, Mat& pointVector, in
 		}
 		else
 		{
-			if(tile.at<uchar>(y1,x1) > tile.at<uchar>(y2,x2) + 30)
+			if(tile.at<uchar>(y1,x1) > tile.at<uchar>(y2,x2) + 15)
 				featureMat.at<float>(im, i) = 1;
-			else if(tile.at<uchar>(y1,x1) < tile.at<uchar>(y2,x2) - 30)
+			else if(tile.at<uchar>(y1,x1) < tile.at<uchar>(y2,x2)-15)
 				featureMat.at<float>(im,i) = -1;
 		}
 		//if(featureMat.at<float>(im,i) != 0)
@@ -149,21 +149,40 @@ void calcLinesFeaturesTile(Mat& tile, Mat& featureMat, Mat& pointVector, int num
 	}
 }
 
-Mat calcFeaturesTraining(RandomCharacters trainingData, int numOfPoints, string featureType, int downSample, bool useNoise)
+void calcStdTile(Mat& tile, Mat& featureMat, int im, int reSizeTo)
 {
-	int width = 128; //trainingData.randChars[0]->size().width;
-	int height = 128; //trainingData.randChars[0]->size().height;
+	//Scalar mean, std, meanTile, stdTile;
+	Mat tileRect;
+	int rectSizeX = tile.cols/reSizeTo;
+	int rectSizeY = tile.rows/reSizeTo;
+	//cv::meanStdDev(tile,mean,std);
+
+	for(int y=0; y<reSizeTo; y++)
+	{
+		for(int x=0; x<reSizeTo; x++)
+		{
+			tileRect = tile(Rect(x*rectSizeX,y*rectSizeY,rectSizeX,rectSizeY));
+			//cv::meanStdDev(tileRect,meanTile,stdTile);
+			//cout << stdTile(0) << endl;
+			featureMat.at<float>(im,y*reSizeTo+x) = sum(tileRect)(0); //(meanTile(0) - mean(0))/std(0);
+
+		}
+	}
+}
+
+Mat calcFeaturesTraining(RandomCharacters trainingData, int numOfPoints, string featureType, int tileSizeX, int tileSizeY, bool useNoise)
+{
 	int numOfCharacters = static_cast<int>(trainingData.randChars.size());
 
 	if(featureType == "rects")
 	{
 		printf("Create rect features....\n\n");
-		int rectFiltNum = calcRectFiltNum(width,height)+1;
+		int rectFiltNum = calcRectFiltNum(tileSizeX,tileSizeY)+1;
 		Mat featureMat = Mat::zeros(numOfCharacters,rectFiltNum,CV_32FC1);
 
 		for(int im=0; im<numOfCharacters; im++)
 		{
-			calcRectFeatureTile(*trainingData.randChars[im], featureMat, width, height, im);
+			calcRectFeatureTile(*trainingData.randChars[im], featureMat, tileSizeX, tileSizeY, im);
 		}
 
 		return featureMat;
@@ -175,7 +194,7 @@ Mat calcFeaturesTraining(RandomCharacters trainingData, int numOfPoints, string 
 		Mat pointPairVector = Mat::zeros(numOfPoints,4,CV_32SC1);
 		Mat featureMat = Mat::zeros(numOfCharacters,numOfPoints,CV_32FC1);
 		cv::RNG rng(0);
-		int distThreshold = 20;
+		int distThreshold = 10;
 		int x1, x2, y1, y2;
 		for(int i=0; i<numOfPoints; i++)
 		{
@@ -186,16 +205,16 @@ Mat calcFeaturesTraining(RandomCharacters trainingData, int numOfPoints, string 
 
 			while(abs(x1-x2) < distThreshold && abs(y1-y2) < distThreshold)
 			{
-				x1 = rng.uniform(width/4,width*3/4);
-				y1 = rng.uniform(height/4,height*3/4);
-				x2 = rng.uniform(0,width);
-				y2 = rng.uniform(0,height);
+				x1 = rng.uniform(tileSizeX/4,tileSizeX*3/4);
+				y1 = rng.uniform(tileSizeY/4,tileSizeY*3/4);
+				x2 = rng.uniform(0,tileSizeX);
+				y2 = rng.uniform(0,tileSizeY);
 			}
 
-			pointPairVector.at<int>(i,0) = x1/downSample;
-			pointPairVector.at<int>(i,1) = y1/downSample;
-			pointPairVector.at<int>(i,2) = x2/downSample;
-			pointPairVector.at<int>(i,3) = y2/downSample;
+			pointPairVector.at<int>(i,0) = x1;
+			pointPairVector.at<int>(i,1) = y1;
+			pointPairVector.at<int>(i,2) = x2;
+			pointPairVector.at<int>(i,3) = y2;
 		}
 
 		for(int im=0; im<numOfCharacters; im++)
@@ -222,10 +241,10 @@ Mat calcFeaturesTraining(RandomCharacters trainingData, int numOfPoints, string 
 
 			while(abs(x1-x2) < distThreshold && abs(y1-y2) < distThreshold)
 			{
-				x1 = rng.uniform(width/4,width*3/4);
-				y1 = rng.uniform(height/4,height*3/4);
-				x2 = rng.uniform(0,width);
-				y2 = rng.uniform(0,height);
+				x1 = rng.uniform(tileSizeX/4,tileSizeX*3/4);
+				y1 = rng.uniform(tileSizeY/4,tileSizeY*3/4);
+				x2 = rng.uniform(0,tileSizeX);
+				y2 = rng.uniform(0,tileSizeY);
 			}
 
 			LineVector.at<int>(i,0) = x1;
@@ -245,7 +264,126 @@ Mat calcFeaturesTraining(RandomCharacters trainingData, int numOfPoints, string 
 		abort();
 }
 
+RandomImagesAndCharacters calcPointPairFeaturesScales(vector<Mat*> randomImages, RandomCharacters trainingData, int tileSizeX, int tileSizeY, int resizeTo, int imageSize, int numOfPointPairs, 
+	int numOfTrueCharacters, int numOfFalseCharacters, string typeOfChars, bool useNoise)
+{
+	printf("Calculate random point pairs features for detection of false tiles....\n\n");
+	RandomImagesAndCharacters r;
+	int numOfFalseImages = randomImages.size()*(imageSize/tileSizeX)*(imageSize/tileSizeY);
+	
+	if(typeOfChars == "digitsAndLetters")
+		numOfTrueCharacters = numOfTrueCharacters*36;
+	else
+		abort();
 
+	int tileNumX = imageSize/tileSizeX;
+	int tileNumY = imageSize/tileSizeY;
+	r.features = Mat::zeros(numOfTrueCharacters+numOfFalseCharacters+numOfFalseImages,numOfPointPairs, CV_32FC1);
+	r.responses = Mat::zeros(numOfTrueCharacters+numOfFalseCharacters+numOfFalseImages,1,CV_32SC1);
+	Mat imRect;
+	Mat pointPairVector = Mat::zeros(numOfPointPairs,4,CV_32SC1);
+	cv::RNG rng(0);
+	int distThreshold = 10;
+	int x1, x2, y1, y2;
+	for(int i=0; i<numOfPointPairs; i++)
+	{
+		x1 = 0;
+		y1 = 0;
+		x2 = 0;
+		y2 = 0;
+
+		while(abs(x1-x2) < distThreshold && abs(y1-y2) < distThreshold)
+		{
+			x1 = rng.uniform(tileSizeX/4,tileSizeX*3/4);
+			y1 = rng.uniform(tileSizeY/4,tileSizeY*3/4);
+			x2 = rng.uniform(0,tileSizeX);
+			y2 = rng.uniform(0,tileSizeY);
+		}
+
+		pointPairVector.at<int>(i,0) = x1/(tileSizeX/resizeTo);
+		pointPairVector.at<int>(i,1) = y1/(tileSizeY/resizeTo);
+		pointPairVector.at<int>(i,2) = x2/(tileSizeX/resizeTo);
+		pointPairVector.at<int>(i,3) = y2/(tileSizeY/resizeTo);
+	}
+
+
+	for(int i=0; i< randomImages.size(); i++)
+	{
+		for(int y=0; y<tileNumY; y++)
+		{
+			for(int x=0; x<tileNumX; x++)
+			{
+				imRect = (*randomImages[i])(Rect(x,y,tileSizeX,tileSizeY));
+				resize(imRect,imRect,Size(resizeTo,resizeTo));
+				calcPointPairsFeaturesTile(imRect, r.features, pointPairVector,numOfPointPairs,i*tileNumX*tileNumY+y*tileNumY+x,useNoise);
+			}
+		}
+		delete randomImages[i];
+	}
+
+	for(int i=0; i<numOfTrueCharacters; i++)
+	{
+		resize(*trainingData.randChars[i],imRect,Size(resizeTo,resizeTo));
+		calcPointPairsFeaturesTile(imRect,r.features,pointPairVector,numOfPointPairs,numOfFalseImages+i,useNoise);
+		r.responses.at<int>(numOfFalseImages+i,0) = 1;
+		delete trainingData.randChars[i];
+	}
+
+	for(int i=numOfTrueCharacters; i<numOfTrueCharacters+numOfFalseCharacters; i++)
+	{
+		resize(*trainingData.randChars[i],imRect,Size(resizeTo,resizeTo));
+		calcPointPairsFeaturesTile(imRect,r.features,pointPairVector,numOfPointPairs,numOfFalseImages+i,useNoise);
+		delete trainingData.randChars[i];
+	}
+	return r;
+}
+
+RandomImagesAndCharacters calcStandardDeviationFeatures(vector<Mat*> randomImages, RandomCharacters trainingData, int tileSizeX, int tileSizeY, int imageSize, 
+	int numOfTrueCharacters, int numOfFalseCharacters, string typeOfChars, int reSizeTo)
+{
+	int numOfFeatures = reSizeTo*reSizeTo;
+	printf("Calculate standard deviation features for detection of false tiles....\n\n");
+	RandomImagesAndCharacters r;
+	int numOfFalseImages = randomImages.size()*(imageSize/tileSizeX)*(imageSize/tileSizeY);
+	
+	if(typeOfChars == "digitsAndLetters")
+		numOfTrueCharacters = numOfTrueCharacters*36;
+	else
+		abort();
+
+	int tileNumX = imageSize/tileSizeX;
+	int tileNumY = imageSize/tileSizeY;
+	r.features = Mat::zeros(numOfTrueCharacters+numOfFalseCharacters+numOfFalseImages,numOfFeatures, CV_32FC1);
+	r.responses = Mat::zeros(numOfTrueCharacters+numOfFalseCharacters+numOfFalseImages,1,CV_32SC1);
+	Mat imRect;
+
+	for(int i=0; i< randomImages.size(); i++)
+	{
+		for(int y=0; y<tileNumY; y++)
+		{
+			for(int x=0; x<tileNumX; x++)
+			{
+				imRect = (*randomImages[i])(Rect(x,y,tileSizeX,tileSizeY));
+				calcStdTile(imRect,r.features, i*tileNumX*tileNumY+y*tileNumY+x, reSizeTo);
+			}
+		}
+		delete randomImages[i];
+	}
+
+	for(int i=0; i<numOfTrueCharacters; i++)
+	{
+		calcStdTile(*trainingData.randChars[i],r.features,numOfFalseImages+i, reSizeTo);
+		r.responses.at<int>(numOfFalseImages+i,0) = 1;
+		delete trainingData.randChars[i];
+	}
+
+	for(int i=numOfTrueCharacters; i<numOfTrueCharacters+numOfFalseCharacters; i++)
+	{
+		calcStdTile(*trainingData.randChars[i],r.features,numOfFalseImages+i, reSizeTo);
+		delete trainingData.randChars[i];
+	}
+	return r;
+}
 /*Mat calcPointPairsFeaturesTraining(RandomCharacters trainingData, int numOfPoints)
 {
 printf("Create random point pairs features....\n\n");
