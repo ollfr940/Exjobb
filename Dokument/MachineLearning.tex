@@ -1,8 +1,41 @@
 \chapter{Machine learning}
 \label{sec:Machine learning}
 
-\section{Classification}
-\label{classification}
+\section{Supervised learning}
+\label{Supervised learning}
+
+%Flow chart
+\begin{figure}[H]
+\centering
+\tikzstyle{largeblock} = [rectangle, draw, fill=blue!20, 
+    text width=10em, text centered, rounded corners, minimum height=5em]
+\tikzstyle{block} = [rectangle, draw, fill=blue!20, 
+    text width=5em, text centered, rounded corners, minimum height=4em]
+\tikzstyle{line} = [draw, -latex']
+\tikzstyle{cloud} = [draw, ellipse,fill=red!20, node distance=3cm,
+    minimum height=2em]
+    
+\begin{tikzpicture}[node distance = 2.5cm, auto]
+    % Place nodes
+    \node [cloud] (training) {labeled training data};
+    \node [largeblock, below of=training] (machine) {training using machine learning};
+    \node [block, right of=machine, node distance=4cm] (classifier) {classifier};
+    \node [cloud, right of=training, node distance=4cm] (test) {test data};
+    \node [block, below of=classifier] (prediction) {prediction};
+    
+    
+    % Draw edges
+    \path [line] (training) -- (machine);
+    \path [line] (machine) -- (classifier);
+    \path [line] (classifier) -- (prediction);
+    \path [line] (test) -- (classifier);
+
+\end{tikzpicture}
+\caption{Overview of the system}
+\label{system}
+\end{figure}
+
+
 \section{Discrete AdaBoost}
 \label{sec:Discret AdaBoost}
 For detection of barecodes the machine learning method discrete AdaBoost has been used which is described in \citep{Friedman:2000}. The algorithm is described in \ref{AdaBoost}. The basic idea is to train a number of weak classifiers which during the testing will be combined to a strong classifier. To each data in the training dataset there are corresponding weights which are equal for all data at the beginning. The weak classifiers are trained sequentially and after each step the weights are adjusted depending if they were correctly or incorrectly classified. In each iteration all the training data are used.
@@ -51,7 +84,7 @@ During training the trees are created one at a time with a random subset of trai
 \centering
 	\includegraphics[scale=0.5]{RandomForest}
 	\caption{Image illustrates testing using Random forest. Source: \citep{Criministri:2011}}
-	\label{FAST}
+	\label{randomforest}
 \end{figure}
  
 % Local Variables:

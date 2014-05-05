@@ -1,5 +1,59 @@
-\chapter{Data processing}
-\label{sec:Data processing}
+\chapter{Data processing for barcode detection}
+\label{sec:Data processing for barcode detection}
+
+\section{Overview}
+\label{sec:Overview}
+The system for detection of barcodes is basically divided in two parts. The data consist of a big amount of images which contain 1D- and 2D-codes. Each image has a corresponding ground truth where the parts of the image containing codes has been labeled as "true" and the rest as "false". The first part of the system involves the training using machine learning which produces a classifier. It consists of the following steps.
+
+\begin{itemize}
+	\item Preprocessing of images.
+	\item Divide images and ground truth into tiles.
+	\item Calculate features for each tile.
+	\item Use machine learning to train the dataset.
+\end{itemize}
+
+The objective of the second part of the system is to predict unlabeled data in real time. This is done with the trained classifiers and a cascade. It involves the following steps:
+
+\begin{itemize}
+	\item Preprocessing of image.
+	\item In each step of the cascade calculate some specific features.
+	\item Use the corresponding classifier for each feature to reduce the amount of data between each step in the cascade.
+	\item Postprocessing of the output.
+\end{itemize}
+An overview of the system can be seen in \ref{system}.
+
+%Flow chart
+\begin{figure}[H]
+\centering
+\tikzstyle{largeblock} = [rectangle, draw, fill=blue!20, 
+    text width=10em, text centered, rounded corners, minimum height=5em]
+\tikzstyle{block} = [rectangle, draw, fill=blue!20, 
+    text width=5em, text centered, rounded corners, minimum height=4em]
+\tikzstyle{line} = [draw, -latex']
+\tikzstyle{cloud} = [draw, ellipse,fill=red!20, node distance=3cm,
+    minimum height=2em]
+    
+\begin{tikzpicture}[node distance = 2.5cm, auto]
+    % Place nodes
+    \node [cloud] (training) {labeled training data};
+    \node [largeblock, below of=training] (machine) {training using machine learning};
+    \node [block, below of=machine] (classifier) {classifier};
+    \node [cloud, right of=training, node distance=4cm] (test) {test data};
+    \node [block, below of=test, node distance=5cm] (cascade) {cascade};
+    \node [block, below of=cascade] (prediction) {prediction};
+    
+    
+    % Draw edges
+    \path [line] (training) -- (machine);
+    \path [line] (machine) -- (classifier);
+    \path [line] (classifier) -- (cascade);
+    \path [line] (test) -- (cascade);
+    \path [line] (cascade) -- (prediction);
+
+\end{tikzpicture}
+\caption{Overview of the system}
+\label{system}
+\end{figure}
 
 \section{The dataset}
 \label{The dataset}
@@ -37,6 +91,132 @@ Some of the features used in the system gives better result with some preprocess
 \section{Postprocessing}
 \label{Postprocessing}
 At the end of the cascade when all the test data have been predicted there are some postprocessing before obtaining the final result. The reason for this is to remove some possible true false classifications. The false classifications are often distinctive since the true true classifications usually lay in clusters. Here a filter is applied which removes isolated true classifications. After that some morphological operations are done to fill some possible holes in the areas where the codes are.
+
+\section{Cascade}
+\label{sec:Cascade}
+Since the system needs to work in real time it needs to be fast. One effective way to speed it up is to use a cascade when predicting the data. In the cascade one or several features are calculated at each step. In each step the corresponding classifier of the feature is used to classify the data. If the data is classified as true it will continue to the next step otherwise it will not be used any more. In the figure below the principle of the cascade is illustrated.
+
+\begin{figure}[H]
+\centering
+\tikzstyle{block} = [rectangle, draw, fill=blue!20, 
+    text width=5em, text centered, rounded corners, minimum height=4em]
+\tikzstyle{datablock} = [rectangle, draw, fill=blue!20, 
+    text width=5em, text centered, minimum height=8em]
+\tikzstyle{line} = [draw, -latex']
+\tikzstyle{predict} = [text centered]
+
+\begin{tikzpicture}[node distance = 2.5cm, auto]
+    % Place nodes
+    \node [datablock] (test) {test data};
+    \node [block, right of=test] (feature1) {feature 1};
+    \node [block, right of=feature1] (feature2) {feature 2};
+  	\node [block, right of=feature2] (feature3) {feature 3};
+  	\node [predict, right of=feature3] (true) {true};
+  	\node [predict, below of=feature1] (false1) {false};
+  	\node [predict, below of=feature2] (false2) {false};
+  	\node [predict, below of=feature3] (false3) {false};
+       
+    % Draw edges
+    \path [line] (test) -- (feature1);
+    \path [line] (feature1) -- (feature2);
+    \path [line] (feature2) -- (feature3);
+    \path [line] (feature3) -- (true);
+    \path [line] (feature1) -- (false1);
+    \path [line] (feature2) -- (false2);
+    \path [line] (feature3) -- (false3);
+
+\end{tikzpicture}
+\caption{Cascade model}
+\label{Cascade}
+\end{figure}
+
+By testing different setups the cascade in \ref{Cascade1} has given good results. Here the standard deviation is calculated first. This feature is not very heavy computationally and it also reduces the amount of data quite a lot. In the second step the structure tensor has been used since it is a good feature for separating 1D-codes from 2D-codes. In the last step the most computationally heavy methods are used.  
+
+\begin{figure}[H]
+\centering
+\tikzstyle{block} = [rectangle, draw, fill=blue!20, 
+    text width=5em, text centered, rounded corners, minimum height=4em]
+\tikzstyle{datablock} = [rectangle, draw, fill=blue!20, 
+    text width=5em, text centered, minimum height=8em]
+\tikzstyle{line} = [draw, -latex']
+\tikzstyle{predict} = [text centered]
+
+\begin{tikzpicture}[node distance = 2.5cm, auto]
+    % Place nodes
+    \node [datablock] (test) {test data};
+    \node [block, right of=test] (std) {Standard deviation};
+    \node [block, right of=std] (tensor) {Structure tensor};
+  	\node [block, right of=tensor] (dist) {Distance map};
+  	\node [block, below of=tensor] (fast) {FAST};
+  	\node [block, right of=fast] (LBP) {LBP};
+  	\node [predict, right of=dist] (1d) {1D-code};
+  	\node [predict, right of=LBP] (2d) {2D-code};
+  	\node [predict, below of=std] (false1) {false};
+  	\node [predict, above of=dist] (false2) {false};
+  	\node [predict, below of=fast] (false3) {false};
+  	\node [predict, below of=LBP] (false4) {false};
+       
+    % Draw edges
+    \path [line] (test) -- (std);
+    \path [line] (std) -- (tensor);
+    \path [line] (tensor) -- (dist);
+    \path [line] (tensor) -- (fast);
+    \path [line] (fast) -- (LBP);
+    \path [line] (std) -- (false1);
+    \path [line] (dist) -- (false2);
+    \path [line] (fast) -- (false3);
+    \path [line] (LBP) -- (false4);
+    \path [line] (LBP) -- (2d);
+    \path [line] (dist) -- (1d);
+
+\end{tikzpicture}
+\caption{Cascade model 1}
+\label{Cascade1}
+\end{figure}
+
+One alternative is to use the FAST corner detection in the second step instead of the structure tensor.  This is an other good way to separates 1D- and 2D-codes. This cascade model is illustrated in \ref{Cascade2}
+
+\begin{figure}[H]
+\centering
+\tikzstyle{block} = [rectangle, draw, fill=blue!20, 
+    text width=5em, text centered, rounded corners, minimum height=4em]
+\tikzstyle{datablock} = [rectangle, draw, fill=blue!20, 
+    text width=5em, text centered, minimum height=8em]
+\tikzstyle{line} = [draw, -latex']
+\tikzstyle{predict} = [text centered]
+
+\begin{tikzpicture}[node distance = 2.5cm, auto]
+    % Place nodes
+    \node [datablock] (test) {test data};
+    \node [block, right of=test] (std) {Standard deviation};
+    \node [block, right of=std] (fast) {FAST};
+  	\node [block, right of=fast] (LBP) {LBP};
+  	\node [block, below of=fast] (tensor) {Structure tensor};
+  	\node [block, right of=tensor] (dist) {Distance map};
+  	\node [predict, right of=dist] (1d) {1D-code};
+  	\node [predict, right of=LBP] (2d) {2D-code};
+  	\node [predict, below of=std] (false1) {false};
+  	\node [predict, above of=LBP] (false2) {false};
+  	\node [predict, below of=tensor] (false3) {false};
+  	\node [predict, below of=dist] (false4) {false};
+       
+    % Draw edges
+    \path [line] (test) -- (std);
+    \path [line] (std) -- (fast);
+    \path [line] (fast) -- (LBP);
+    \path [line] (fast) -- (tensor);
+    \path [line] (tensor) -- (dist);
+    \path [line] (std) -- (false1);
+    \path [line] (LBP) -- (false2);
+    \path [line] (tensor) -- (false3);
+    \path [line] (dist) -- (false4);
+    \path [line] (LBP) -- (2d);
+    \path [line] (dist) -- (1d);
+
+\end{tikzpicture}
+\caption{Cascade model 2}
+\label{Cascade2}
+\end{figure}
 % Local Variables:
 % TeX-master: "main.tex"
 % End:

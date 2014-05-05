@@ -1,0 +1,116 @@
+\chapter{Evaluation of OCR}
+\label{sec:Evaluation of OCR}
+Here is an evaluation of random forest when used for character recognition and point pair features. During training there are a number of different parameters which can have high significance for the resulting classifier. When using the classifier for testing the amount of overlap of the tile is also of hight importance. In the end of the chapter the training with point pair features are also compared with two-rectangle features. In each step in the evaluation there is a measure of the accuracy and the time.
+
+\section{Evaluation of training}
+\label{sec:Evaluation of training}
+The system for OCR are using two different classifier, one for separation of background and characters and one for classification of the individual character. Hence the evaluation has been done for both classifiers separately.
+ 
+\subsection{Classifier for individual characters}
+\label{sec:Classifier for individual characters}
+Here follows an evaluation for the training of the classifier for classification of individual characters. The classifier has been trained with different amount of features, different number of trees and different amount of training data. The evaluation has been made with test data which is similar to the training data, i.e. the statistical properties of the translation and rotation of the characters are the same as for the training. There are individual tables for the amount of true detections and the average time for each character. First the result for training with 4100 training data is presented.
+ 
+\begin{table}[H]
+\begin{center}
+     \begin{tabular}{ | l | l | l | l | }
+     \hline
+     no. of point pairs & 100 trees & no 500 trees & 1000 trees \\ \hline
+   	 100 & 69.8 & 71 &  	\\ \hline
+     500 & 75.5 & 79 &  	\\ \hline
+     1000 & 78.9 & 80 &  \\ \hline
+     5000 & 79.4 & 81.9 & 	\\ \hline
+     10000 & 79.3 & 81.9 & 	\\ \hline
+     20000 & 78.8 & 80.6 & 	\\ \hline
+     30000 & 80.3 & 80   & 	\\ \hline
+     40000 & 80 &   80  & 	\\ \hline
+     50000 & 77.5 &  81   & 	\\ \hline
+     \end{tabular}
+\end{center}
+\caption{The amount of true detection in percent for training with different numbers of point pairs and different amount of trees using 4100 training data}
+\end{table}
+
+\begin{table}[H]
+\begin{center}
+     \begin{tabular}{ | l | l | l | l | }
+     \hline
+     no. of point pairs & 100 trees & no 500 trees & 1000 trees \\ \hline
+   	 100 & 45 & 504 &  	\\ \hline
+     500 & 50 & 533 &  	\\ \hline
+     1000 & 50 & 539 &  \\ \hline
+     5000 & 66 & 547 & 	\\ \hline
+     10000 & 75 & 574 & 	\\ \hline
+     20000 & 87 &  608  & 	\\ \hline
+     30000 & 98.8 &  644  & 	\\ \hline
+     40000 & 104 &  683  & 	\\ \hline
+     50000 & 111 &  693  & 	\\ \hline
+     \end{tabular}
+\end{center}
+\caption{Average time in $\mu$s for training with different numbers of point pairs and different amount of trees using 4100 training data}
+\end{table}
+
+Here is the result for training with 8200 training data using the same parameters as above.
+
+\begin{table}[H]
+\begin{center}
+     \begin{tabular}{ | l | l | l | l | }
+     \hline
+     no. of point pairs & 100 trees & no 500 trees & 1000 trees \\ \hline
+   	 100 &  &  &  	\\ \hline
+     500 &  &  &  	\\ \hline
+     1000 & & &  \\ \hline
+     5000 & & & 	\\ \hline
+     10000 & & & 	\\ \hline
+     20000 & & & 	\\ \hline
+     30000 & & & 	\\ \hline
+     40000 & & & 	\\ \hline
+     50000 & & & 	\\ \hline
+     \end{tabular}
+\end{center}
+\caption{The amount of true detection in percent for training with different numbers of point pairs and different amount of trees using 8200 training data}
+\end{table}
+
+
+\begin{table}[H]
+\begin{center}
+     \begin{tabular}{ | l | l | l | l | }
+     \hline
+     no. of point pairs & 100 trees & no 500 trees & 1000 trees \\ \hline
+   	 100 & & &  	\\ \hline
+     500 & & &  	\\ \hline
+     1000 & & &  \\ \hline
+     5000 & & & 	\\ \hline
+     10000 & & & 	\\ \hline
+     20000 & & & 	\\ \hline
+     30000 & & & 	\\ \hline
+     40000 & & & 	\\ \hline
+     50000 & & & 	\\ \hline
+     \end{tabular}
+\end{center}
+\caption{Average time in $\mu$s for training with different numbers of point pairs and different amount of trees using 8200 training data}
+\end{table}
+
+\subsection{Classifier for separation of characters and background}
+\label{sec:Classifier for separation of characters and background}
+The classifier for separation of characters and background has been evaluated with different number of trees, different amount of training data and different number of features.
+
+\begin{table}[H]
+\begin{center}
+     \begin{tabular}{ | l | l | l | l | }
+     \hline
+     no. of point pairs & 100 trees & no 500 trees & 1000 trees \\ \hline
+   	 100 & & &  	\\ \hline
+     500 & & &  	\\ \hline
+     1000 & & &  \\ \hline
+     5000 & & & 	\\ \hline
+     10000 & & & 	\\ \hline
+     20000 & & & 	\\ \hline
+     30000 & & & 	\\ \hline
+     40000 & & & 	\\ \hline
+     50000 & & & 	\\ \hline
+     \end{tabular}
+\end{center}
+\caption{Average time in $\mu$s for training with different numbers of point pairs and different amount of trees using 8200 training data}
+\end{table}
+
+\section{Evaluation of testing}
+\label{sec:Evaluation of testing}
