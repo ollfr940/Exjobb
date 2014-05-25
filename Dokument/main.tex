@@ -13,28 +13,31 @@
 
 \usepackage{mythesis}
 \usepackage{tikz}
+\usepackage{hyperref}
+\usepackage{xr}
+\usepackage{algorithm}
 \usetikzlibrary{shapes,arrows}
-
+\raggedbottom
 
 \begin{document}
 \selectlanguage{english}
-%\makeFrontPage
-%\frontmatter
-%\maketitle
-%\makeLibraryPage{\input{svensk-sammanfattning}}
+\makeFrontPage
+\frontmatter
+\maketitle
+\makeLibraryPage{\input{svensk-sammanfattning}}
 
 %\begin{abstract}[swedish]
 %  \input{svensk-sammanfattning}
 %\end{abstract}
-%\begin{abstract}[english]
-%  \input{engelsk-sammanfattning}
-%\end{abstract}
+\begin{abstract}[english]
+  \input{engelsk-sammanfattning}
+\end{abstract}
 %\include{tack}
-%\tableofcontents
+\tableofcontents
 %\include{notation}
 
 \mainmatter
-%\include{introduction}
+\include{introduction}
 %\include{Overview}
 \include{MachineLearning}
 \include{FeaturesBarcodes}
@@ -44,6 +47,7 @@
 \include{Evaluation}
 \include{EvaluationOCR}
 \include{FurtherInvestigations}
+
 
 
 \backmatter

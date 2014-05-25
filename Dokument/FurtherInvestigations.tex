@@ -1,5 +1,8 @@
 \chapter{Further investigations}
 \label{sec:Further investigations}
+
+\section{Detection of barcodes}
+\label{sec:Detection of barcodes}
 There are a lot of different 2D-codes that are currently used. The system has so far only been tested on Maxicodes. Since other kinds of 2D-codes have similar structure they will presumably give a very similar result. Maxicodes should be more difficult to detect then most other types of 2D-codes since it consists of small circular areas. Most other types of 2D-codes, e.g. QR-codes consists instead of small squares, this should make them even more distinguishable then Maxicodes.
 
 The system could also be tested on a more complicated data set. If one would use a data set that contains more details in the background the system would probably detect a lot more false tiles. However many of the data sets that are available look very similar to the one that has been used.
@@ -7,4 +10,18 @@ The system could also be tested on a more complicated data set. If one would use
 Since there are not many details in the background in the current dataset the amount of data is reduced a lot when using standard deviation in the first step of the cascade. A dataset with more details in the background would probably lead to a much slower system. It would also probably detect more false tiles. The amount of details in the background is therefore very critical both for the accuracy and the speed.
 
 To speed up the system even further one possibility could be to train a cascade for the local binary pattern alone. Since the LBP has 256 features it is likely that some of these features are more common than others for 2D-codes. If the system is trained to use these features in a certain order it would probably speed up the system. However since the LBP features have been used in the last step of the cascade and the amount of data already has been reduced a lot it is uncertain if this will make much impact.
+
+One thing that might be of interest is to make the classifier more robust against light changes in the images. This could be done by making more training samples from the original samples by changing the brightness randomly. By doing this it might not be necessary to sharpen the images during the preprocessing.
+
+One of the biggest challenges in barcode detection is to distinguish between 2D-codes and text. To make the classifier better it would be of interest to 
+\section{OCR}
+\label{sec:OCR}
+One of the most critical thing for making a good classifier is to have a good training dataset. This could be further developed for the system. The first classifier which is used to separate the characters from the background generally makes a lot of false predictions. One likely reason is that the background images which are used as the false class are not optimal. The best thing would be to have background images which looks similar to the images which the system is going to be used to.
+
+The post processing could be developed even further. For example it might be assumed that the characters always are written on one or several lines. This is one thing that could be utilized to remove false detections. 
+
+The classifier has so far only been tried out with uppercase letters and digits. If one would like to add lowercase letters or other kinds of characters as well it can be done easily. However with more classes the amount of training data has to be larger.
+
+The system could also be tried out with some other font as well. 
  
+very sensitive to scale
